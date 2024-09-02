@@ -3,7 +3,6 @@ package com.tboostintelli_core.common;
 public class GeneralConstants {
 
     public static final String ALL = "all";
-    public static final String COMMA = ",";
     public static final int TIMEOUT = 10000;
     public static final String GOOGLE_MAP_API_ADDR = "address";
     public static final String GOOGLE_MAP_API_KEY = "key";

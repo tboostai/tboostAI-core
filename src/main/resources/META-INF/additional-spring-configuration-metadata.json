@@ -1,0 +1,13 @@
+{
+  "properties": [
+    {
+      "name": "google.api.key",
+      "type": "java.lang.String",
+      "description": "Description for google.api.key."
+    },
+    {
+      "name": "google.api.geocoding.url",
+      "type": "java.lang.String",
+      "description": "Description for google.api.geocoding.url."
+    }
+  ] }

@@ -6,10 +6,7 @@ import com.google.maps.model.LatLng;
 import com.tboostAI_core.config.GoogleApiConfigProperties;
 import com.tboostAI_core.utils.WebClientUtils;
 import jakarta.annotation.Resource;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
@@ -29,7 +26,7 @@ public class GoogleGeocodingService {
 
     public Mono<LatLng> getLatLngFromAddress(String address) {
 
-        URI googleUri  = UriComponentsBuilder.newInstance()
+        URI googleUri = UriComponentsBuilder.newInstance()
                 .scheme(HTTPS)
                 .host(googleApiConfigProperties.getBaseUrl())
                 .queryParam(GOOGLE_MAP_API_ADDR, address)
@@ -37,7 +34,7 @@ public class GoogleGeocodingService {
                 .build()
                 .toUri();
 
-        Mono<String> googleResponseStr  = webClientUtils.sendGetRequest(googleUri.toString(), String.class);
+        Mono<String> googleResponseStr = webClientUtils.sendGetRequest(googleUri.toString(), String.class);
 
         return googleResponseStr.map(this::extractLatLng);
     }

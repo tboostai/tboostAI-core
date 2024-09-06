@@ -29,9 +29,7 @@ public class WebClientUtils {
                         Mono.error(new RuntimeException("Server error occurred while requesting " + uri))
                 )
                 .bodyToMono(responseType)
-                .doOnError(WebClientResponseException.class, e -> {
-                    logger.error("Error response: {}", e.getResponseBodyAsString());
-                })
+                .doOnError(WebClientResponseException.class, e -> logger.error("Error response: {}", e.getResponseBodyAsString()))
                 .onErrorResume(e -> {
                     throw new RuntimeException("Failed to retrieve data from " + uri, e);
                 });

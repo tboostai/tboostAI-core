@@ -31,4 +31,4 @@ build/
 
 ### VS Code ###
 .vscode/
-/src/main/java/com/tboostintelli_core/controller/VehicleController.java
+/src/main/java/com/tboostAI_core/controller/VehicleController.java

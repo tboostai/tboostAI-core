@@ -4,17 +4,25 @@ import com.google.maps.model.LatLng;
 import com.tboostAI_core.dto.VehicleBasicInfoDTO;
 import com.tboostAI_core.entity.Location;
 import com.tboostAI_core.entity.VehicleBasicInfo;
+import com.tboostAI_core.entity.request_entity.Message;
+import com.tboostAI_core.entity.request_entity.OpenAIRequest;
 import com.tboostAI_core.entity.request_entity.SearchVehicleListRequest;
+import com.tboostAI_core.mapper.SearchParamsMapper;
 import com.tboostAI_core.mapper.VehicleMapper;
 import com.tboostAI_core.repository.VehicleRepo;
+import com.tboostAI_core.utils.WebClientUtils;
 import jakarta.annotation.Resource;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -23,6 +31,7 @@ import java.util.Optional;
 
 import static com.tboostAI_core.common.GeneralConstants.*;
 
+@Slf4j
 @Service
 public class VehicleBasicInfoService {
 
@@ -31,6 +40,10 @@ public class VehicleBasicInfoService {
     private VehicleRepo vehicleRepo;
     @Resource
     private GoogleGeocodingService googleGeocodingService;
+    @Resource
+    private WebClientUtils webClientUtils;
+
+    private static final Logger logger = LoggerFactory.getLogger(VehicleBasicInfoService.class);
 
     public VehicleBasicInfoDTO getVehicleByUuid(Long uuid) {
         Optional<VehicleBasicInfo> vehicle = vehicleRepo.getVehicleByUuid(uuid);
@@ -50,8 +63,18 @@ public class VehicleBasicInfoService {
             throw new RuntimeException("Failed to extract longitude and latitude from Google Map Geocoding API response.");
         }
 
-        SearchVehicleListRequest searchVehicleListRequest = new SearchVehicleListRequest(make, model, minYear, maxYear, trim, mileage, minPrice, maxPrice, color, bodyType,
-                engineType, transmission, drivetrain, latLng.lng, latLng.lat, condition, capacity, features, distance);
+        SearchVehicleListRequest searchVehicleListRequest = SearchVehicleListRequest.builder()
+                .make(make).model(model)
+                .minYear(minYear).maxYear(maxYear)
+                .trim(trim).mileage(mileage)
+                .minPrice(minPrice).maxPrice(maxPrice)
+                .color(color).bodyType(bodyType)
+                .engineType(engineType).transmission(transmission).drivetrain(drivetrain)
+                .longitude(latLng.lng).latitude(latLng.lat)
+                .condition(condition).capacity(capacity)
+                .features(features).distance(distance)
+                .build();
+
         // Precise Search
         Page<VehicleBasicInfoDTO> result = executeSearch(searchVehicleListRequest, pageable);
 
@@ -139,22 +162,46 @@ public class VehicleBasicInfoService {
                 predicates.add(featureJoin.get("name").in(searchVehicleListRequest.getFeatures()));
             }
 
-            double maxDistanceInMeters = searchVehicleListRequest.getDistance() * KM2METER_RATE;
-            // Join location table to calculate distance
-            Join<VehicleBasicInfo, Location> locationJoin = root.join("location");
-            Expression<Double> distanceExpression = cb.function("ST_Distance_Sphere", Double.class,
-                    cb.function("POINT", Object.class, locationJoin.get("longitude"), locationJoin.get("latitude")),
-                    cb.function("POINT", Object.class, cb.literal(searchVehicleListRequest.getLongitude()), cb.literal(searchVehicleListRequest.getLatitude()))
-            );
+            if (searchVehicleListRequest.getDistance() != null && searchVehicleListRequest.getDistance() > 0) {
 
-            Predicate distancePredicate = cb.lessThanOrEqualTo(distanceExpression, maxDistanceInMeters);
-            predicates.add(distancePredicate);
+                double maxDistanceInMeters = searchVehicleListRequest.getDistance() * KM2METER_RATE;
+                // Join location table to calculate distance
+                Join<VehicleBasicInfo, Location> locationJoin = root.join("location");
+                Expression<Double> distanceExpression = cb.function("ST_Distance_Sphere", Double.class,
+                        cb.function("POINT", Object.class, locationJoin.get("longitude"), locationJoin.get("latitude")),
+                        cb.function("POINT", Object.class, cb.literal(searchVehicleListRequest.getLongitude()), cb.literal(searchVehicleListRequest.getLatitude()))
+                );
 
+                Predicate distancePredicate = cb.lessThanOrEqualTo(distanceExpression, maxDistanceInMeters);
+                predicates.add(distancePredicate);
+            }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
         Page<VehicleBasicInfo> vehicleBasicInfos = vehicleRepo.findAll(spec, pageable);
 
         return vehicleBasicInfos.map(VehicleMapper.INSTANCE::vehicleBasicInfoToVehicleBasicInfoDTO);
+    }
+
+    public Page<VehicleBasicInfoDTO> searchVehiclesByLLM(String content, int distance, Pageable pageable) {
+
+        OpenAIRequest openAIRequest;
+        openAIRequest = new OpenAIRequest();
+        List<Message> messages = new ArrayList<>();
+        Message message = new Message();
+        message.setContent(content);
+        message.setRole("user");
+        messages.add(message);
+        openAIRequest.setMessages(messages);
+        Mono<SearchVehicleListRequest> responseObj = webClientUtils.sendPostRequestInternal("http://tboostAI-llm/llm", openAIRequest, SearchVehicleListRequest.class);
+
+        return responseObj
+                .map(SearchParamsMapper.INSTANCE::mapWithDefaultValues)
+                .flatMap(processedRequest -> {
+                    logger.debug("Processed request: {}", processedRequest);
+                    return Mono.fromCallable(() -> executeSearch(processedRequest, pageable));
+                })
+                .doOnError(e -> logger.error("Error occurred: {}", e.getMessage()))
+                .block();
     }
 }

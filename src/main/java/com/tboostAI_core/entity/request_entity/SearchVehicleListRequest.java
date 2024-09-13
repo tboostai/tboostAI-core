@@ -1,12 +1,13 @@
 package com.tboostAI_core.entity.request_entity;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-@AllArgsConstructor
+@Builder(toBuilder = true)
 public class SearchVehicleListRequest {
     private String make;
     private String model;
@@ -26,5 +27,5 @@ public class SearchVehicleListRequest {
     private String condition;
     private Integer capacity;
     private List<String> features;
-    private int distance;
+    private Integer distance;
 }

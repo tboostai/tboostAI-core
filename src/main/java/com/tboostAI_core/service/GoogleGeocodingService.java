@@ -34,7 +34,7 @@ public class GoogleGeocodingService {
                 .build()
                 .toUri();
 
-        Mono<String> googleResponseStr = webClientUtils.sendGetRequest(googleUri.toString(), String.class);
+        Mono<String> googleResponseStr = webClientUtils.sendGetRequestExternal(googleUri.toString(), String.class);
 
         return googleResponseStr.map(this::extractLatLng);
     }

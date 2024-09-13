@@ -68,7 +68,7 @@ public class VehicleBasicInfo {
 
     private int capacity;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinTable(
             name = "vehicle_feature_mapping",  // 中间表名称
             joinColumns = @JoinColumn(name = "vehicle_id"),
@@ -76,7 +76,7 @@ public class VehicleBasicInfo {
     )
     private List<VehicleFeature> features;
 
-    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "vehicle", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<VehicleImage> images;
 
     @Column(length = 200, nullable = false)

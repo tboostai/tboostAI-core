@@ -1,7 +1,5 @@
 package com.tboostAI_core.entity.inner_model;
 
-import com.tboostAI_core.dto.LocationDTO;
-import com.tboostAI_core.dto.VehicleImageDTO;
 import lombok.Builder;
 import lombok.Data;
 

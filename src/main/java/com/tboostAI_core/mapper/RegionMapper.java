@@ -7,5 +7,5 @@ import org.mapstruct.Mapper;
 
 @Mapper
 public interface RegionMapper {
-    Region toRegion(TaxEntity entity);
+    Region toRegion(Region region);
 }

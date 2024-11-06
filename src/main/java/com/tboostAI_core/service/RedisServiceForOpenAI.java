@@ -3,7 +3,6 @@ package com.tboostAI_core.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tboostAI_core.entity.request_entity.Message;
-import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -24,28 +23,27 @@ import java.util.zip.GZIPOutputStream;
 import static com.tboostAI_core.common.GeneralConstants.*;
 
 @Service
-public class RedisService {
+public class RedisServiceForOpenAI {
 
-    @Resource
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final RedisTemplate<String, Object> redisTemplate;
-    private static final Logger logger = LoggerFactory.getLogger(VehicleBasicInfoService.class);
+    private static final Logger logger = LoggerFactory.getLogger(RedisServiceForOpenAI.class);
 
-    public RedisService(RedisTemplate<String, Object> redisTemplate) {
+    public RedisServiceForOpenAI(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
     // Create new chat session
     public String createNewSessionForChat() {
         String sessionId = UUID.randomUUID().toString();
-        this.saveMessageToList(sessionId, OPENAI_SYSTEM_DEFAULT_MSG);
+        Message systemMessage = generateSystemMessage();
+        this.saveMessageToList(sessionId, systemMessage);
         return sessionId;
     }
 
     // Save chat history
-    public void saveMessageToList(String sessionId, String content) {
-        Message message = generateMessage(sessionId, content);
+    public void saveMessageToList(String sessionId, Message message) {
         String compressedMsg = compressMessage(message);
         redisTemplate.opsForList().rightPush(sessionId, compressedMsg);
         redisTemplate.expire(sessionId, CHAT_SESSION_TIMEOUT, TimeUnit.SECONDS);
@@ -72,10 +70,11 @@ public class RedisService {
 
     // Compress Message object to string
     public String compressMessage(Message message) {
-        if(message == null) {
+        if (message == null) {
             logger.info("Message is null");
             return null;
         }
+
         String jsonStr;
         try {
             jsonStr = objectMapper.writeValueAsString(message);
@@ -129,15 +128,10 @@ public class RedisService {
         return null;
     }
 
-    private Message generateMessage(String sessionId, String content) {
+    private Message generateSystemMessage() {
         Message message = new Message();
-        if (Boolean.FALSE.equals(redisTemplate.hasKey(sessionId))) {
-            message.setRole(OPENAI_SYSTEM);
-            message.setContent(content);
-        } else {
-            message.setRole(OPENAI_USER);
-            message.setContent(content);
-        }
+        message.setRole(OPENAI_SYSTEM);
+        message.setContent(com.tboostAI_core.common.GeneralConstants.OPENAI_SYSTEM_DEFAULT_MSG);
 
         return message;
     }

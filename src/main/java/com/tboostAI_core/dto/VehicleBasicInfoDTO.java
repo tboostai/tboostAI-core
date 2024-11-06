@@ -1,7 +1,5 @@
 package com.tboostAI_core.dto;
 
-import com.tboostAI_core.entity.Location;
-import com.tboostAI_core.entity.VehicleImage;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -10,25 +8,32 @@ import java.util.List;
 
 @Data
 public class VehicleBasicInfoDTO {
-        private Long uuid;
         private String make;
         private String model;
         private int year;
         private String trim;
         private String vin;
         private int mileage;
-        private BigDecimal price;
-        private String color;
+        private String exteriorColor;
+        private String interiorColor;
         private String bodyType;
         private String engineType;
+        private BigDecimal engineSize;
+        private int cylinder;
         private String transmission;
         private String drivetrain;
-        private Location location;
-        private String condition;
+        private LocationDTO location;
+        private String vehicleCondition;
+        private String engineInfo;
+        private String cylinderInfo;
+        private String warranty;
+        private String vehicleTitle;
         private int capacity;
+        private int doors;
         private List<String> features;
-        private List<VehicleImage> images;
-        private String description;
+        private List<VehicleImageDTO> images;
         private Timestamp listingDate;
         private int sourceId;
+        private String description;
+        private List<String> aiDescription;
 }

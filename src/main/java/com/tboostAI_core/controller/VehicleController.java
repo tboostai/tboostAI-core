@@ -1,11 +1,8 @@
 package com.tboostAI_core.controller;
 
 import com.tboostAI_core.dto.VehicleBasicInfoDTO;
-import com.tboostAI_core.entity.request_entity.SearchVehicleListRequest;
 import com.tboostAI_core.service.VehicleBasicInfoService;
 import jakarta.annotation.Resource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,9 +24,6 @@ public class VehicleController {
     @Resource
     private PagedResourcesAssembler<VehicleBasicInfoDTO> pagedResourcesAssembler;
 
-    private static final Logger logger = LoggerFactory.getLogger(VehicleController.class);
-
-
     @GetMapping("/vehicle/{uuid}")
     public ResponseEntity<VehicleBasicInfoDTO> getVehicleByVin(@PathVariable Long uuid) {
         VehicleBasicInfoDTO vehicleDTO = vehicleBasicInfoService.getVehicleByUuid(uuid);
@@ -38,21 +32,21 @@ public class VehicleController {
 
     @GetMapping("/search")
     public ResponseEntity<PagedModel<EntityModel<VehicleBasicInfoDTO>>> searchVehicles(
-            @RequestParam String make,
-            @RequestParam String model,
+            @RequestParam List<String> make,
+            @RequestParam List<String> model,
             @RequestParam Integer minYear,
             @RequestParam Integer maxYear,
-            @RequestParam String trim,
+            @RequestParam List<String> trim,
             @RequestParam Integer mileage,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
-            @RequestParam String color,
-            @RequestParam String bodyType,
-            @RequestParam String engineType,
-            @RequestParam String transmission,
-            @RequestParam String drivetrain,
+            @RequestParam List<String> color,
+            @RequestParam List<String> bodyType,
+            @RequestParam List<String> engineType,
+            @RequestParam List<String> transmission,
+            @RequestParam List<String> drivetrain,
             @RequestParam String address,
-            @RequestParam String condition,
+            @RequestParam List<String> condition,
             @RequestParam int capacity,
             @RequestParam List<String> features,
             @RequestParam(required = false, defaultValue = "20") int distance,
@@ -72,13 +66,21 @@ public class VehicleController {
     @PostMapping("/search-by-llm")
     public ResponseEntity<PagedModel<EntityModel<VehicleBasicInfoDTO>>> searchVehicles(
             @RequestBody String content,  // content from user
+            @RequestParam String address,
+            @RequestHeader("sessionID") String sessionID,
             @RequestParam(required = false, defaultValue = "20") int distance,
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
 
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by("listingDate").descending());
-        Page<VehicleBasicInfoDTO> vehiclePage = vehicleBasicInfoService.searchVehiclesByLLM(content, distance, pageable);
+        Page<VehicleBasicInfoDTO> vehiclePage = vehicleBasicInfoService.searchVehiclesByLLM(sessionID, content, address, distance, pageable);
         PagedModel<EntityModel<VehicleBasicInfoDTO>> vehicleBasicInfos = pagedResourcesAssembler.toModel(vehiclePage);
         return ResponseEntity.ok(vehicleBasicInfos);
+    }
+
+    @PostMapping("/chat/session")
+    public ResponseEntity<String> createSession() {
+        String sessionId = vehicleBasicInfoService.createNewSessionForChat();
+        return ResponseEntity.ok(sessionId);
     }
 }

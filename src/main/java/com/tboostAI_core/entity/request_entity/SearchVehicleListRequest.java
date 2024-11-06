@@ -1,30 +1,30 @@
 package com.tboostAI_core.entity.request_entity;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Data
 @Builder(toBuilder = true)
-public class SearchVehicleListRequest {
-    private String make;
-    private String model;
+public class SearchVehicleListRequest implements Serializable {
+    private List<String> make;
+    private List<String> model;
     private Integer minYear;
     private Integer maxYear;
-    private String trim;
+    private List<String> trim;
     private Integer mileage;
     private Double minPrice;
     private Double maxPrice;
-    private String color;
-    private String bodyType;
-    private String engineType;
-    private String transmission;
-    private String drivetrain;
+    private List<String> color;
+    private List<String> bodyType;
+    private List<String> engineType;
+    private List<String> transmission;
+    private List<String> drivetrain;
     private Double longitude;
     private Double latitude;
-    private String condition;
+    private List<String> condition;
     private Integer capacity;
     private List<String> features;
     private Integer distance;

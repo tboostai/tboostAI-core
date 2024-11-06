@@ -9,7 +9,6 @@ import com.tboostAI_core.entity.VehicleBasicInfoEntity;
 import com.tboostAI_core.entity.VehiclePriceEntity;
 import com.tboostAI_core.entity.inner_model.VehicleBasicInfo;
 import com.tboostAI_core.entity.request_entity.Message;
-import com.tboostAI_core.entity.request_entity.OpenAIRequest;
 import com.tboostAI_core.entity.request_entity.SearchVehicleListRequest;
 import com.tboostAI_core.mapper.SearchParamsMapper;
 import com.tboostAI_core.mapper.VehicleInfoMapper;

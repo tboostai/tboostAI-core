@@ -77,10 +77,4 @@ public class VehicleController {
         PagedModel<EntityModel<VehicleBasicInfoDTO>> vehicleBasicInfos = pagedResourcesAssembler.toModel(vehiclePage);
         return ResponseEntity.ok(vehicleBasicInfos);
     }
-
-    @PostMapping("/chat/session")
-    public ResponseEntity<String> createSession() {
-        String sessionId = vehicleBasicInfoService.createNewSessionForChat();
-        return ResponseEntity.ok(sessionId);
-    }
 }

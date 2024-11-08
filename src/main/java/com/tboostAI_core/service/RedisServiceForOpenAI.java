@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tboostAI_core.entity.request_entity.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -25,17 +26,21 @@ import static com.tboostAI_core.common.GeneralConstants.*;
 @Service
 public class RedisServiceForOpenAI {
 
+    private final LettuceConnectionFactory lettuceConnectionFactory;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final RedisTemplate<String, Object> redisTemplate;
     private static final Logger logger = LoggerFactory.getLogger(RedisServiceForOpenAI.class);
 
-    public RedisServiceForOpenAI(RedisTemplate<String, Object> redisTemplate) {
+    public RedisServiceForOpenAI(LettuceConnectionFactory lettuceConnectionFactory, RedisTemplate<String, Object> redisTemplate) {
+        this.lettuceConnectionFactory = lettuceConnectionFactory;
         this.redisTemplate = redisTemplate;
     }
 
     // Create new chat session
     public String createNewSessionForChat() {
+        logger.info("Before create new session, redis host is {}, port is {}",
+                lettuceConnectionFactory.getHostName(), lettuceConnectionFactory.getPort());
         String sessionId = UUID.randomUUID().toString();
         Message systemMessage = generateSystemMessage();
         this.saveMessageToList(sessionId, systemMessage);
@@ -45,7 +50,7 @@ public class RedisServiceForOpenAI {
     // Save chat history
     public void saveMessageToList(String sessionId, Message message) {
         String compressedMsg = compressMessage(message);
-        logger.info("Session ID is {}, messages will be compressed are {}", sessionId, message);
+        logger.info("Session ID is {}", sessionId);
         redisTemplate.opsForList().rightPush(sessionId, compressedMsg);
         redisTemplate.expire(sessionId, CHAT_SESSION_TIMEOUT, TimeUnit.SECONDS);
     }

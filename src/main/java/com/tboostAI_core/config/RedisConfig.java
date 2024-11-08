@@ -1,5 +1,7 @@
 package com.tboostAI_core.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +15,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @Configuration
 public class RedisConfig {
 
+    private static final Logger logger = LoggerFactory.getLogger(RedisConfig.class);
     @Value("${spring.data.redis.ssl.enabled:false}")
     private boolean useSsl;
 
@@ -29,6 +32,7 @@ public class RedisConfig {
     public LettuceConnectionFactory redisConnectionFactory() {
         RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
 
+        logger.info("Connecting to Redis, host is {}, port is {}, useSSL is {}", redisConfig.getHostName(), redisConfig.getPort(), useSsl);
         LettuceClientConfiguration clientConfig;
         if (useSsl) {
             clientConfig = LettuceClientConfiguration.builder()

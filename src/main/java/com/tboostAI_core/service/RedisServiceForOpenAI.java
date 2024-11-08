@@ -45,7 +45,7 @@ public class RedisServiceForOpenAI {
     // Save chat history
     public void saveMessageToList(String sessionId, Message message) {
         String compressedMsg = compressMessage(message);
-        logger.info("Session ID is {}, messages will be compressed are {}", sessionId, message);
+        logger.info("Session ID is {}, messages will be compressed are {}", sessionId, message.getContent());
         redisTemplate.opsForList().rightPush(sessionId, compressedMsg);
         redisTemplate.expire(sessionId, CHAT_SESSION_TIMEOUT, TimeUnit.SECONDS);
     }

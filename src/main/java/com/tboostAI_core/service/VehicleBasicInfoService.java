@@ -289,4 +289,9 @@ public class VehicleBasicInfoService {
 
         return redisServiceForOpenAI.createNewSessionForChat();
     }
+
+    public void deleteCurrentSessionForChat(String sessionId) {
+
+        redisServiceForOpenAI.deleteSession(sessionId);
+    }
 }

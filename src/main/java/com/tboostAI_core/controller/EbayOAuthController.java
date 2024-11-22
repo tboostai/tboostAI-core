@@ -1,5 +1,6 @@
 package com.tboostAI_core.controller;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
@@ -18,7 +19,11 @@ public class EbayOAuthController {
     private static final Logger logger = LoggerFactory.getLogger(EbayOAuthController.class);
 
     // 定义验证令牌（与 eBay 开发者后台的验证令牌一致）
-    private final String verificationToken = "uKDX14F4xrez27WVj7YRIsy30TJthXFBbOmmOzsEVuQCvwrJddcJhFsD4UCkVoHR";
+    @Value("${ebay.verification.token}")
+    private String verificationToken;
+
+    @Value("${ebay.notification.endpoint}")
+    private String notificationEndpoint;
 
     // 定义接收授权码的回调地址
     @RequestMapping(value = "/ebay_oauth_callback", method = RequestMethod.GET)
@@ -47,7 +52,7 @@ public class EbayOAuthController {
             // 处理 challenge_code 验证请求
             if (queryParams.containsKey("challenge_code")) {
                 String challengeCode = queryParams.get("challenge_code");
-                String endpoint = "https://b293-2605-8d80-482-9749-d48f-eae2-4742-ac4d.ngrok-free.app/ebay_notification"; // 替换为你的实际 endpoint 地址
+                String endpoint = notificationEndpoint + "/ebay_notification";
                 String hashString = challengeCode + verificationToken + endpoint;
                 String hashedValue = sha256(hashString);
                 logger.info("Generated challenge response: {}", hashedValue);

@@ -2,6 +2,10 @@ package com.tboostAI_core.controller;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,45 +44,53 @@ public class EbayOAuthController {
     }
 
 
-    // 接收 eBay 通知的 endpoint
-    @RequestMapping(value = "/ebay_notification", method = {RequestMethod.GET, RequestMethod.POST})
-    public String ebayNotification(@RequestParam Map<String, String> queryParams, @RequestBody(required = false) Map<String, Object> body) {
+    @RequestMapping(value = "/ebay_notification", method = {RequestMethod.GET, RequestMethod.POST}, produces = "application/json")
+    public ResponseEntity<String> ebayNotification(
+            @RequestParam Map<String, String> queryParams,
+            @RequestBody(required = false) Map<String, Object> body) {
         try {
-            // 记录收到通知的日志
             logger.info("Received a notification request");
-            logger.info("Query params: " + queryParams);
-            logger.info("Request body: " + body);
+            logger.info("Query params: {}", queryParams);
+            logger.info("Request body: {}", body);
 
-            // 处理 challenge_code 验证请求
             if (queryParams.containsKey("challenge_code")) {
                 String challengeCode = queryParams.get("challenge_code");
                 String endpoint = notificationEndpoint + "/ebay_notification";
                 String hashString = challengeCode + verificationToken + endpoint;
                 String hashedValue = sha256(hashString);
                 logger.info("Generated challenge response: {}", hashedValue);
-                return "{\"challengeResponse\":\"" + hashedValue + "\"}";
+
+                // 构建响应
+                String responseBody = "{\"challengeResponse\":\"" + hashedValue + "\"}";
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+
+                // 增加日志记录完整响应
+                logger.info("Returning response to eBay:");
+                logger.info("HTTP Status: 200");
+                logger.info("Headers: {}", headers);
+                logger.info("Response Body: {}", responseBody);
+
+                return new ResponseEntity<>(responseBody, headers, HttpStatus.OK);
             } else {
-                // 处理账户删除通知
                 if (body != null && body.containsKey("userId")) {
-                    String userId = body.get("userId").toString(); // 获取用户 ID
+                    String userId = body.get("userId").toString();
                     logger.info("Received account deletion notification for user: " + userId);
-                    // 在这里执行删除用户数据的逻辑
                 } else {
                     logger.warn("No userId found in the request body");
                 }
-                return "{\"status\":\"success\"}";
+                return ResponseEntity.ok("{\"status\":\"success\"}");
             }
         } catch (NoSuchAlgorithmException e) {
-            // 使用 log4j 的 error 方法记录错误
             logger.error("Error while processing the request: ", e);
-            return "{\"status\":\"error\", \"message\":\"Internal server error\"}";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"status\":\"error\", \"message\":\"Internal server error\"}");
         } catch (Exception e) {
-            // 捕获所有其他异常并记录
             logger.error("Unexpected error: ", e);
-            return "{\"status\":\"error\", \"message\":\"Unexpected internal error\"}";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"status\":\"error\", \"message\":\"Unexpected internal error\"}");
         }
     }
-
     // 生成 SHA-256 哈希值的方法
     private String sha256(String input) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");

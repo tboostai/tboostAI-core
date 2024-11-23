@@ -18,6 +18,8 @@ public class GeneralConstants {
     public static final String OPENAI_USER = "user";
     public static final String OPENAI_ASSISTANT = "assistant";
     public static final String COMMA = ",";
+    public static final String DEFAULT_DISTANCE = "100";
+    public static final String DEFAULT_PAGE_SIZE = "50";
     public static final String OPENAI_SYSTEM_DEFAULT_MSG =
      """
      I want you to play the role of a knowledgeable and creative salesperson at a car dealership.\s

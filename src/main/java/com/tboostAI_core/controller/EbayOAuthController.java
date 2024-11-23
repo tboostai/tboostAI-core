@@ -43,7 +43,6 @@ public class EbayOAuthController {
         }
     }
 
-
     @RequestMapping(value = "/ebay_notification", method = {RequestMethod.GET, RequestMethod.POST}, produces = "application/json")
     public ResponseEntity<String> ebayNotification(
             @RequestParam Map<String, String> queryParams,
@@ -91,7 +90,6 @@ public class EbayOAuthController {
                     .body("{\"status\":\"error\", \"message\":\"Unexpected internal error\"}");
         }
     }
-
     // 生成 SHA-256 哈希值的方法
     private String sha256(String input) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");

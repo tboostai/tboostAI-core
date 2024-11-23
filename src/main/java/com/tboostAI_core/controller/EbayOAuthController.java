@@ -2,6 +2,7 @@ package com.tboostAI_core.controller;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -42,18 +43,15 @@ public class EbayOAuthController {
         }
     }
 
-
-    // 接收 eBay 通知的 endpoint
     @RequestMapping(value = "/ebay_notification", method = {RequestMethod.GET, RequestMethod.POST}, produces = "application/json")
     public ResponseEntity<String> ebayNotification(
             @RequestParam Map<String, String> queryParams,
             @RequestBody(required = false) Map<String, Object> body) {
         try {
             logger.info("Received a notification request");
-            logger.info("Query params: " + queryParams);
-            logger.info("Request body: " + body);
+            logger.info("Query params: {}", queryParams);
+            logger.info("Request body: {}", body);
 
-            // 处理 challenge_code 验证请求
             if (queryParams.containsKey("challenge_code")) {
                 String challengeCode = queryParams.get("challenge_code");
                 String endpoint = notificationEndpoint + "/ebay_notification";
@@ -61,6 +59,18 @@ public class EbayOAuthController {
                 String hashedValue = sha256(hashString);
                 logger.info("Generated challenge response: {}", hashedValue);
 
+                // 构建响应
+                String responseBody = "{\"challengeResponse\":\"" + hashedValue + "\"}";
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+
+                // 增加日志记录完整响应
+                logger.info("Returning response to eBay:");
+                logger.info("HTTP Status: 200");
+                logger.info("Headers: {}", headers);
+                logger.info("Response Body: {}", responseBody);
+
+                return new ResponseEntity<>(responseBody, headers, HttpStatus.OK);
                 // 使用 ResponseEntity 明确返回 Content-Type
                 return ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)

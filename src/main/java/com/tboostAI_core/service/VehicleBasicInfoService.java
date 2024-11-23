@@ -17,6 +17,7 @@ import com.tboostAI_core.utils.CommonUtils;
 import com.tboostAI_core.utils.WebClientUtils;
 import jakarta.persistence.criteria.*;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +35,6 @@ import static com.tboostAI_core.common.GeneralConstants.*;
 @Slf4j
 @Service
 public class VehicleBasicInfoService {
-
 
     private final VehicleRepo vehicleRepo;
     private final GoogleGeocodingService googleGeocodingService;
@@ -227,8 +227,48 @@ public class VehicleBasicInfoService {
         return CommonUtils.listToPage(vehicleBasicInfoDTOS, pageable);
     }
 
-    public Page<VehicleBasicInfoDTO> searchVehiclesByLLM(String sessionId, String content, String address, int distance, Pageable pageable) {
+    public Page<VehicleBasicInfoDTO> searchVehiclesByLLM(String sessionId, Double minPrice, Double maxPrice, List<String> bodyType, List<String> engineType, String content, String address, int distance, Pageable pageable) {
 
+        Result result = generateMultipleInfo(sessionId, content, address);
+
+        return result.responseObj()
+                .map(SearchParamsMapper.INSTANCE::mapWithDefaultValues)
+                .flatMap(processedRequest -> {
+                    try {
+                        // Save user message history to Redis
+                        redisServiceForOpenAI.saveMessageToList(sessionId, result.newUserMessage());
+                        String processedRequestJsonStr = objectMapper.writeValueAsString(processedRequest);
+                        logger.info("processedRequestJsonStr: {}", processedRequestJsonStr);
+
+                        // Generate and save assistant message to Redis
+                        Message assistantMessage = generateMessage(OPENAI_ASSISTANT, processedRequestJsonStr);
+                        logger.info("assistantMessage : {}", assistantMessage);
+                        redisServiceForOpenAI.saveMessageToList(sessionId, assistantMessage);
+                    } catch (JsonProcessingException e) {
+                        logger.error("Failed to convert processedRequest to Json string", e);
+                    }
+
+                    // Replace fields based on whether front-end input is present, or keep original values
+                    SearchVehicleListRequest updatedRequest = processedRequest.toBuilder()
+                            .minPrice(minPrice != null ? minPrice : processedRequest.getMinPrice())
+                            .maxPrice(maxPrice != null ? maxPrice : processedRequest.getMaxPrice())
+                            .bodyType(bodyType != null && !bodyType.isEmpty() ? bodyType : processedRequest.getBodyType())
+                            .engineType(engineType != null && !engineType.isEmpty() ? engineType : processedRequest.getEngineType())
+                            .longitude(result.latLng() != null ? result.latLng().lng : processedRequest.getLongitude())
+                            .latitude(result.latLng() != null ? result.latLng().lat : processedRequest.getLatitude())
+                            .distance(distance > 0 ? distance : processedRequest.getDistance())
+                            .build();
+
+                    logger.info("Updated request: {}", updatedRequest);
+
+                    return Mono.fromCallable(() -> executeSearch(updatedRequest, pageable));
+                })
+                .doOnError(e -> logger.error("Error occurred: {}", e.getMessage()))
+                .block();
+    }
+
+    @NotNull
+    private Result generateMultipleInfo(String sessionId, String content, String address) {
         List<Message> messages = new ArrayList<>();
         List<Object> messagesHistory = redisServiceForOpenAI.getChatHistoryList(sessionId);
 
@@ -245,36 +285,10 @@ public class VehicleBasicInfoService {
         Mono<SearchVehicleListRequest> responseObj = webClientUtils.sendPostRequestInternal(tboostAILlmHost, messages, SearchVehicleListRequest.class);
 
         LatLng latLng = googleGeocodingService.getLatLngFromAddress(address).block();
+        return new Result(newUserMessage, responseObj, latLng);
+    }
 
-        return responseObj
-                .map(SearchParamsMapper.INSTANCE::mapWithDefaultValues)
-                .flatMap(processedRequest -> {
-                    try {
-                        // Save user message history to Redis
-                        redisServiceForOpenAI.saveMessageToList(sessionId, newUserMessage);
-                        String processedRequestJsonStr = objectMapper.writeValueAsString(processedRequest);
-                        logger.info("processedRequestJsonStr: {}", processedRequestJsonStr);
-
-                        //Generate and save assistant message to redis
-                        Message assistantMessage = generateMessage(OPENAI_ASSISTANT, processedRequestJsonStr);
-                        logger.info("assistantMessage : {}", assistantMessage);
-                        redisServiceForOpenAI.saveMessageToList(sessionId, assistantMessage);
-                    } catch (JsonProcessingException e) {
-                        logger.error("Failed to convert processedRequest to Json string", e);
-                    }
-                    if (latLng != null) {
-                        processedRequest.toBuilder()
-                                .longitude(latLng.lng)
-                                .latitude(latLng.lat)
-                                .distance(distance)
-                                .build();
-                    }
-                    logger.info("Processed request: {}", processedRequest);
-
-                    return Mono.fromCallable(() -> executeSearch(processedRequest, pageable));
-                })
-                .doOnError(e -> logger.error("Error occurred: {}", e.getMessage()))
-                .block();
+    private record Result(Message newUserMessage, Mono<SearchVehicleListRequest> responseObj, LatLng latLng) {
     }
 
     private Message generateMessage(String openAiRole, String content) {

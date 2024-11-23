@@ -71,10 +71,6 @@ public class EbayOAuthController {
                 logger.info("Response Body: {}", responseBody);
 
                 return new ResponseEntity<>(responseBody, headers, HttpStatus.OK);
-                // 使用 ResponseEntity 明确返回 Content-Type
-                return ResponseEntity.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body("{\"challengeResponse\":\"" + hashedValue + "\"}");
             } else {
                 if (body != null && body.containsKey("userId")) {
                     String userId = body.get("userId").toString();

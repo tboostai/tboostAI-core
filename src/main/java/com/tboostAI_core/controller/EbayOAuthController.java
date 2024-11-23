@@ -43,7 +43,6 @@ public class EbayOAuthController {
         }
     }
 
-
     @RequestMapping(value = "/ebay_notification", method = {RequestMethod.GET, RequestMethod.POST}, produces = "application/json")
     public ResponseEntity<String> ebayNotification(
             @RequestParam Map<String, String> queryParams,
@@ -72,6 +71,10 @@ public class EbayOAuthController {
                 logger.info("Response Body: {}", responseBody);
 
                 return new ResponseEntity<>(responseBody, headers, HttpStatus.OK);
+                // 使用 ResponseEntity 明确返回 Content-Type
+                return ResponseEntity.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"challengeResponse\":\"" + hashedValue + "\"}");
             } else {
                 if (body != null && body.containsKey("userId")) {
                     String userId = body.get("userId").toString();

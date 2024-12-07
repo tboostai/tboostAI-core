@@ -1,5 +1,9 @@
 package com.tboostAI_core.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.HttpHeaders;
@@ -16,33 +20,52 @@ import java.util.Map;
 
 @SpringBootApplication
 @RestController
+@Tag(name = "Ebay Auth API", description = "APIs used for eBay Authorization and Notification handling")
 public class EbayOAuthController {
 
-
-    // Logger 用于打印调试信息
     private static final Logger logger = LoggerFactory.getLogger(EbayOAuthController.class);
 
-    // 定义验证令牌（与 eBay 开发者后台的验证令牌一致）
     @Value("${ebay.verification.token}")
     private String verificationToken;
 
     @Value("${ebay.notification.endpoint}")
     private String notificationEndpoint;
 
-    // 定义接收授权码的回调地址
+    @Operation(
+            summary = "Handle eBay OAuth callback",
+            description = "Handles the callback request from eBay OAuth with the authorization code"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Authorization code successfully received"),
+            @ApiResponse(responseCode = "400", description = "Missing authorization code in the callback")
+    })
     @RequestMapping(value = "/ebay_oauth_callback", method = RequestMethod.GET)
     public String handleEbayOAuthCallback(@RequestParam Map<String, String> queryParams) {
-        // 检查授权回调中是否有 authorization code
+        // Check if the callback contains an authorization code
         if (queryParams.containsKey("code")) {
             String authorizationCode = queryParams.get("code");
-            // 在这里处理授权码，比如保存它或继续用它获取access_token
-            // ...
+            // Handle the authorization code (e.g., save it or exchange for access token)
             return "Received authorization code: " + authorizationCode;
         } else {
             return "Error: Authorization code not found.";
         }
     }
 
+    @Operation(
+            summary = "Handle eBay notification requests",
+            description = "Handles notification requests from eBay, including challenge responses and user account deletions"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Notification processed successfully",
+                    content = @io.swagger.v3.oas.annotations.media.Content(
+                            mediaType = "application/json",
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = "{\"challengeResponse\":\"hashed-challenge-code\"}"
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Internal server error during notification processing")
+    })
     @RequestMapping(value = "/ebay_notification", method = {RequestMethod.GET, RequestMethod.POST}, produces = "application/json")
     public ResponseEntity<String> ebayNotification(
             @RequestParam Map<String, String> queryParams,
@@ -52,6 +75,7 @@ public class EbayOAuthController {
             logger.info("Query params: {}", queryParams);
             logger.info("Request body: {}", body);
 
+            // Handle challenge requests from eBay
             if (queryParams.containsKey("challenge_code")) {
                 String challengeCode = queryParams.get("challenge_code");
                 String endpoint = notificationEndpoint + "/ebay_notification";
@@ -59,12 +83,11 @@ public class EbayOAuthController {
                 String hashedValue = sha256(hashString);
                 logger.info("Generated challenge response: {}", hashedValue);
 
-                // 构建响应
+                // Build response for the challenge
                 String responseBody = "{\"challengeResponse\":\"" + hashedValue + "\"}";
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
 
-                // 增加日志记录完整响应
                 logger.info("Returning response to eBay:");
                 logger.info("HTTP Status: 200");
                 logger.info("Headers: {}", headers);
@@ -72,9 +95,10 @@ public class EbayOAuthController {
 
                 return new ResponseEntity<>(responseBody, headers, HttpStatus.OK);
             } else {
+                // Handle account deletion notifications or other payloads
                 if (body != null && body.containsKey("userId")) {
                     String userId = body.get("userId").toString();
-                    logger.info("Received account deletion notification for user: " + userId);
+                    logger.info("Received account deletion notification for user: {}", userId);
                 } else {
                     logger.warn("No userId found in the request body");
                 }
@@ -90,7 +114,14 @@ public class EbayOAuthController {
                     .body("{\"status\":\"error\", \"message\":\"Unexpected internal error\"}");
         }
     }
-    // 生成 SHA-256 哈希值的方法
+
+    /**
+     * Generates a SHA-256 hash value for the given input string.
+     *
+     * @param input The input string to hash
+     * @return The SHA-256 hash value
+     * @throws NoSuchAlgorithmException if the SHA-256 algorithm is not available
+     */
     private String sha256(String input) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
         md.update(input.getBytes());

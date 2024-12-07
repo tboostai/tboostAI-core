@@ -1,16 +1,30 @@
 package com.tboostAI_core.dto;
 
 import com.tboostAI_core.entity.VehicleBasicInfoEntity;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
+@Schema(name = "VehiclePriceDTO", description = "DTO representing the pricing details of a vehicle, including currency and converted values")
 public class VehiclePriceDTO {
+
+    @Schema(description = "The unique identifier for the vehicle price entry", example = "101")
     private Long id;
+
+    @Schema(description = "The vehicle information associated with this price", implementation = VehicleBasicInfoEntity.class)
     private VehicleBasicInfoEntity vehicle;
-    private BigDecimal price; // 当前价格，带两位小数
-    private String currency; // 当前货币单位, 例如 USD, CAD
-    private BigDecimal convertedFromValue; // 原始货币价格（可选）
-    private String convertedFromCurrency; // 原始货币单位（可选）
+
+    @Schema(description = "The price of the vehicle in the specified currency", example = "25000.00")
+    private BigDecimal price;
+
+    @Schema(description = "The currency of the price", example = "USD")
+    private String currency;
+
+    @Schema(description = "The price value converted from a different currency", example = "20000.00")
+    private BigDecimal convertedFromValue;
+
+    @Schema(description = "The original currency of the converted price", example = "EUR")
+    private String convertedFromCurrency;
 }

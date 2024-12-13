@@ -31,7 +31,7 @@ public class GoogleGeocodingService {
                 .host(googleApiConfigProperties.getBaseUrl())
                 .queryParam(GOOGLE_MAP_API_ADDR, address)
                 .queryParam(GOOGLE_MAP_API_KEY, googleApiConfigProperties.getKey())
-                .build()
+                .build(false)
                 .toUri();
 
         Mono<String> googleResponseStr = webClientUtils.sendGetRequestExternal(googleUri.toString(), String.class);

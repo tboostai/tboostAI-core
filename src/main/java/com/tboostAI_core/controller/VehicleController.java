@@ -1,5 +1,6 @@
 package com.tboostAI_core.controller;
 
+import com.tboostAI_core.dto.SearchVehiclesResponse;
 import com.tboostAI_core.dto.VehicleBasicInfoDTO;
 import com.tboostAI_core.service.VehicleBasicInfoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,13 +10,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PagedResourcesAssembler;
-import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,8 +29,6 @@ public class VehicleController {
 
     @Resource
     private VehicleBasicInfoService vehicleBasicInfoService;
-    @Resource
-    private PagedResourcesAssembler<VehicleBasicInfoDTO> pagedResourcesAssembler;
 
     private static final Logger logger = LoggerFactory.getLogger(VehicleController.class);
 
@@ -123,7 +119,7 @@ public class VehicleController {
             @ApiResponse(responseCode = "400", description = "Invalid parameters provided")
     })
     @GetMapping("/search-by-llm")
-    public ResponseEntity<PagedModel<EntityModel<VehicleBasicInfoDTO>>> searchVehicles(
+    public ResponseEntity<SearchVehiclesResponse> searchVehicles(
             @RequestParam Double minPrice,
             @RequestParam Double maxPrice,
             @RequestParam List<String> bodyType,
@@ -138,11 +134,11 @@ public class VehicleController {
         logger.info("VehicleController - Request received for /search-by-llm");
 
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by("listingDate").descending());
-        Page<VehicleBasicInfoDTO> vehiclePage = vehicleBasicInfoService.searchVehiclesByLLM(
+
+        SearchVehiclesResponse searchVehiclesResponse = vehicleBasicInfoService.searchVehiclesByLLM(
                 sessionID, minPrice, maxPrice, bodyType, engineType, content, address, distance, pageable);
 
-        PagedModel<EntityModel<VehicleBasicInfoDTO>> vehicleBasicInfos = pagedResourcesAssembler.toModel(vehiclePage);
-        return ResponseEntity.ok(vehicleBasicInfos);
+        return searchVehiclesResponse != null ? ResponseEntity.ok(searchVehiclesResponse) : ResponseEntity.notFound().build();
     }
 
     @Operation(
@@ -154,7 +150,7 @@ public class VehicleController {
             @ApiResponse(responseCode = "400", description = "Invalid parameters provided")
     })
     @GetMapping("/search")
-    public ResponseEntity<PagedModel<EntityModel<VehicleBasicInfoDTO>>> searchVehicles(
+    public ResponseEntity<SearchVehiclesResponse> searchVehicles(
             @RequestParam List<String> make,
             @RequestParam List<String> model,
             @RequestParam Integer minYear,
@@ -177,11 +173,10 @@ public class VehicleController {
             @RequestParam(required = false, defaultValue = DEFAULT_PAGE_SIZE) Integer pageSize) {
 
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by("listingDate").descending());
-        Page<VehicleBasicInfoDTO> vehiclePage = vehicleBasicInfoService.searchVehicles(
+        SearchVehiclesResponse searchVehiclesResponse = vehicleBasicInfoService.searchVehicles(
                 make, model, minYear, maxYear, trim, mileage, minPrice, maxPrice, color, bodyType, engineType,
                 transmission, drivetrain, address, condition, capacity, features, distance, pageable);
 
-        PagedModel<EntityModel<VehicleBasicInfoDTO>> vehicleBasicInfos = pagedResourcesAssembler.toModel(vehiclePage);
-        return ResponseEntity.ok(vehicleBasicInfos);
+        return searchVehiclesResponse != null ? ResponseEntity.ok(searchVehiclesResponse) : ResponseEntity.notFound().build();
     }
 }

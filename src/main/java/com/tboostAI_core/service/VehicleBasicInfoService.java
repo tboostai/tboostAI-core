@@ -3,6 +3,8 @@ package com.tboostAI_core.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.maps.model.LatLng;
+import com.tboostAI_core.common.SearchTypeEnum;
+import com.tboostAI_core.dto.SearchVehiclesResponse;
 import com.tboostAI_core.dto.VehicleBasicInfoDTO;
 import com.tboostAI_core.entity.LocationEntity;
 import com.tboostAI_core.entity.VehicleBasicInfoEntity;
@@ -14,6 +16,7 @@ import com.tboostAI_core.mapper.SearchParamsMapper;
 import com.tboostAI_core.mapper.VehicleInfoMapper;
 import com.tboostAI_core.repository.VehicleRepo;
 import com.tboostAI_core.utils.CommonUtils;
+import com.tboostAI_core.utils.UpdateUtils;
 import com.tboostAI_core.utils.WebClientUtils;
 import jakarta.persistence.criteria.*;
 import lombok.extern.slf4j.Slf4j;
@@ -63,14 +66,7 @@ public class VehicleBasicInfoService {
     }
 
 
-    public Page<VehicleBasicInfoDTO> searchVehicles(List<String> make, List<String> model,
-                                                    Integer minYear, Integer maxYear,
-                                                    List<String> trim, Integer mileage,
-                                                    Double minPrice, Double maxPrice,
-                                                    List<String> color, List<String> bodyType, List<String> engineType,
-                                                    List<String> transmission, List<String> drivetrain,
-                                                    String address, List<String> condition, Integer capacity,
-                                                    List<String> features, int distance, Pageable pageable) {
+    public SearchVehiclesResponse searchVehicles(List<String> make, List<String> model, Integer minYear, Integer maxYear, List<String> trim, Integer mileage, Double minPrice, Double maxPrice, List<String> color, List<String> bodyType, List<String> engineType, List<String> transmission, List<String> drivetrain, String address, List<String> condition, Integer capacity, List<String> features, int distance, Pageable pageable) {
 
 
         LatLng latLng = googleGeocodingService.getLatLngFromAddress(address).block();
@@ -79,49 +75,79 @@ public class VehicleBasicInfoService {
             throw new RuntimeException("Failed to extract longitude and latitude from Google Map Geocoding API response.");
         }
 
-        SearchVehicleListRequest searchVehicleListRequest = SearchVehicleListRequest.builder()
-                .make(make).model(model)
-                .minYear(minYear).maxYear(maxYear)
-                .trim(trim).mileage(mileage)
-                .minPrice(minPrice).maxPrice(maxPrice)
-                .color(color).bodyType(bodyType)
-                .engineType(engineType).transmission(transmission).drivetrain(drivetrain)
-                .longitude(latLng.lng).latitude(latLng.lat)
-                .condition(condition).capacity(capacity)
-                .features(features).distance(distance)
-                .build();
+        SearchVehicleListRequest searchVehicleListRequest = SearchVehicleListRequest.builder().make(make).model(model).minYear(minYear).maxYear(maxYear).trim(trim).mileage(mileage).minPrice(minPrice).maxPrice(maxPrice).color(color).bodyType(bodyType).engineType(engineType).transmission(transmission).drivetrain(drivetrain).longitude(latLng.lng).latitude(latLng.lat).condition(condition).capacity(capacity).features(features).distance(distance).build();
 
         logger.info("Search Vehicle list request: {}", searchVehicleListRequest);
 
         // Precise Search
-        Page<VehicleBasicInfoDTO> result = executeSearch(searchVehicleListRequest, pageable);
-
-        // Relaxed Search
-        if (result.isEmpty()) {
-            relaxSearchParams(searchVehicleListRequest);
-            result = executeSearch(searchVehicleListRequest, pageable);
-        }
-
-        return result;
+        return getSearchVehiclesResponse(pageable, searchVehicleListRequest);
     }
 
     private void relaxSearchParams(SearchVehicleListRequest searchVehicleListRequest) {
+        // Set fields to null directly without checks (as they are not conditional)
         searchVehicleListRequest.setFeatures(null);
         searchVehicleListRequest.setCapacity(null);
         searchVehicleListRequest.setColor(null);
         searchVehicleListRequest.setModel(null);
-        searchVehicleListRequest.setDistance(searchVehicleListRequest.getDistance() * RELAX_SEARCH_DISTANCE_RATE);
-        searchVehicleListRequest.setMaxPrice(searchVehicleListRequest.getMaxPrice() * RELAX_SEARCH_MAX_PRICE_RATE);
-        searchVehicleListRequest.setMinPrice(searchVehicleListRequest.getMinPrice() * RELAX_SEARCH_MIN_PRICE_RATE);
-        searchVehicleListRequest.setMileage((int) (searchVehicleListRequest.getMileage() * RELAX_SEARCH_MILEAGE_RATE));
         searchVehicleListRequest.setTrim(null);
-        searchVehicleListRequest.setMinYear(searchVehicleListRequest.getMinYear() - RELAX_SEARCH_YEAR_RATE);
+        UpdateUtils.applyIfNotNullAndCondition(
+                searchVehicleListRequest::setDistance,
+                searchVehicleListRequest.getDistance(),
+                RELAX_SEARCH_DISTANCE_RATE,
+                searchVehicleListRequest.getDistance() != null
+        );
+
+        // Update max price if not null and apply rate
+        UpdateUtils.applyIfNotNullAndCondition(
+                searchVehicleListRequest::setMaxPrice,
+                searchVehicleListRequest.getMaxPrice(),
+                RELAX_SEARCH_MAX_PRICE_RATE,
+                searchVehicleListRequest.getMaxPrice() != null
+        );
+
+        // Update min price if not null and apply rate
+        UpdateUtils.applyIfNotNullAndCondition(
+                searchVehicleListRequest::setMinPrice,
+                searchVehicleListRequest.getMinPrice(),
+                RELAX_SEARCH_MIN_PRICE_RATE,
+                searchVehicleListRequest.getMinPrice() != null
+        );
+
+        // Update mileage if not null and apply rate
+        UpdateUtils.applyIfNotNullAndCondition(
+                searchVehicleListRequest::setMileage,
+                searchVehicleListRequest.getMileage(),
+                RELAX_SEARCH_MILEAGE_RATE,
+                searchVehicleListRequest.getMileage() != null
+        );
+
+        // Update distance if not null and apply rate
+        UpdateUtils.applyIfNotNullAndCondition(
+                searchVehicleListRequest::setDistance,
+                searchVehicleListRequest.getDistance(),
+                RELAX_SEARCH_DISTANCE_RATE,
+                searchVehicleListRequest.getDistance() != null
+        );
+
+        // Update min year with subtraction logic (no rate needed)
+        UpdateUtils.setIfNotNull(
+                searchVehicleListRequest::setMinYear,
+                searchVehicleListRequest.getMinYear() - RELAX_SEARCH_YEAR_RATE
+        );
+
+        // Update max year with additional logic
         Calendar calendar = Calendar.getInstance();
         int currentYear = calendar.get(Calendar.YEAR);
-        searchVehicleListRequest.setMaxYear(Math.min(searchVehicleListRequest.getMaxYear() + RELAX_SEARCH_YEAR_RATE, currentYear));
+        if(searchVehicleListRequest.getMaxYear() != null) {
+            UpdateUtils.applyIfNotNullAndCondition(
+                    searchVehicleListRequest::setMaxYear,
+                    searchVehicleListRequest.getMaxYear() + RELAX_SEARCH_YEAR_RATE,
+                    searchVehicleListRequest.getMaxYear() + RELAX_SEARCH_YEAR_RATE <= currentYear
+            );
+        }
     }
 
-    private Page<VehicleBasicInfoDTO> executeSearch(SearchVehicleListRequest searchVehicleListRequest, Pageable pageable) {
+    private SearchVehiclesResponse executeSearch(SearchVehicleListRequest searchVehicleListRequest, Pageable pageable) {
         Specification<VehicleBasicInfoEntity> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -148,16 +174,12 @@ public class VehicleBasicInfoService {
                 // 子查询获取 priceType = 1 的现价
                 Subquery<Double> subqueryPriceType1 = Objects.requireNonNull(query).subquery(Double.class);
                 Root<VehiclePriceEntity> priceRoot1 = subqueryPriceType1.from(VehiclePriceEntity.class);
-                subqueryPriceType1.select(priceRoot1.get("price").as(Double.class))
-                        .where(cb.equal(priceRoot1.get("vehicle"), root),
-                                cb.equal(priceRoot1.get("priceType"), 1)); // priceType = 1
+                subqueryPriceType1.select(priceRoot1.get("price").as(Double.class)).where(cb.equal(priceRoot1.get("vehicle"), root), cb.equal(priceRoot1.get("priceType"), 1)); // priceType = 1
 
                 // 子查询获取 priceType = 0 的车价
                 Subquery<Double> subqueryPriceType0 = query.subquery(Double.class);
                 Root<VehiclePriceEntity> priceRoot0 = subqueryPriceType0.from(VehiclePriceEntity.class);
-                subqueryPriceType0.select(priceRoot0.get("price").as(Double.class))
-                        .where(cb.equal(priceRoot0.get("vehicle"), root),
-                                cb.equal(priceRoot0.get("priceType"), 0)); // priceType = 0
+                subqueryPriceType0.select(priceRoot0.get("price").as(Double.class)).where(cb.equal(priceRoot0.get("vehicle"), root), cb.equal(priceRoot0.get("priceType"), 0)); // priceType = 0
 
                 // 使用 coalesce 函数，如果 priceType = 1 的现价不存在，则使用 priceType = 0 的车价
                 Expression<Double> priceExpression = cb.coalesce(subqueryPriceType1.getSelection(), subqueryPriceType0.getSelection());
@@ -208,10 +230,7 @@ public class VehicleBasicInfoService {
                 double maxDistanceInMeters = searchVehicleListRequest.getDistance() * KM2METER_RATE;
                 // Join location table to calculate distance
                 Join<VehicleBasicInfoEntity, LocationEntity> locationJoin = root.join("locationEntity");
-                Expression<Double> distanceExpression = cb.function("ST_Distance_Sphere", Double.class,
-                        cb.function("POINT", Object.class, locationJoin.get("longitude"), locationJoin.get("latitude")),
-                        cb.function("POINT", Object.class, cb.literal(searchVehicleListRequest.getLongitude()), cb.literal(searchVehicleListRequest.getLatitude()))
-                );
+                Expression<Double> distanceExpression = cb.function("ST_Distance_Sphere", Double.class, cb.function("POINT", Object.class, locationJoin.get("longitude"), locationJoin.get("latitude")), cb.function("POINT", Object.class, cb.literal(searchVehicleListRequest.getLongitude()), cb.literal(searchVehicleListRequest.getLatitude())));
 
                 Predicate distancePredicate = cb.lessThanOrEqualTo(distanceExpression, maxDistanceInMeters);
                 predicates.add(distancePredicate);
@@ -224,47 +243,51 @@ public class VehicleBasicInfoService {
         List<VehicleBasicInfo> vehicleBasicInfos = vehicleBasicInfoEntities.stream().map(VehicleInfoMapper.INSTANCE::toVehicleBasicInfo).toList();
         List<VehicleBasicInfoDTO> vehicleBasicInfoDTOS = vehicleBasicInfos.stream().map(VehicleInfoMapper.INSTANCE::toVehicleBasicInfoDTO).toList();
 
-        return CommonUtils.listToPage(vehicleBasicInfoDTOS, pageable);
+        Page<VehicleBasicInfoDTO> vehicleBasicInfoDTOPage = CommonUtils.listToPage(vehicleBasicInfoDTOS, pageable);
+        SearchVehiclesResponse searchVehiclesResponse = new SearchVehiclesResponse();
+        searchVehiclesResponse.setVehicles(vehicleBasicInfoDTOPage);
+        return searchVehiclesResponse;
     }
 
-    public Page<VehicleBasicInfoDTO> searchVehiclesByLLM(String sessionId, Double minPrice, Double maxPrice, List<String> bodyType, List<String> engineType, String content, String address, int distance, Pageable pageable) {
+    public SearchVehiclesResponse searchVehiclesByLLM(String sessionId, Double minPrice, Double maxPrice, List<String> bodyType, List<String> engineType, String content, String address, int distance, Pageable pageable) {
 
         Result result = generateMultipleInfo(sessionId, content, address);
 
-        return result.responseObj()
-                .map(SearchParamsMapper.INSTANCE::mapWithDefaultValues)
-                .flatMap(processedRequest -> {
-                    try {
-                        // Save user message history to Redis
-                        redisServiceForOpenAI.saveMessageToList(sessionId, result.newUserMessage());
-                        String processedRequestJsonStr = objectMapper.writeValueAsString(processedRequest);
-                        logger.info("processedRequestJsonStr: {}", processedRequestJsonStr);
+        return result.responseObj().map(SearchParamsMapper.INSTANCE::mapWithDefaultValues).flatMap(processedRequest -> {
+            try {
+                // Save user message history to Redis
+                redisServiceForOpenAI.saveMessageToList(sessionId, result.newUserMessage());
+                String processedRequestJsonStr = objectMapper.writeValueAsString(processedRequest);
+                logger.info("processedRequestJsonStr: {}", processedRequestJsonStr);
 
-                        // Generate and save assistant message to Redis
-                        Message assistantMessage = generateMessage(OPENAI_ASSISTANT, processedRequestJsonStr);
-                        logger.info("assistantMessage : {}", assistantMessage);
-                        redisServiceForOpenAI.saveMessageToList(sessionId, assistantMessage);
-                    } catch (JsonProcessingException e) {
-                        logger.error("Failed to convert processedRequest to Json string", e);
-                    }
+                // Generate and save assistant message to Redis
+                Message assistantMessage = generateMessage(OPENAI_ASSISTANT, processedRequestJsonStr);
+                logger.info("assistantMessage : {}", assistantMessage);
+                redisServiceForOpenAI.saveMessageToList(sessionId, assistantMessage);
+            } catch (JsonProcessingException e) {
+                logger.error("Failed to convert processedRequest to Json string", e);
+            }
 
-                    // Replace fields based on whether front-end input is present, or keep original values
-                    SearchVehicleListRequest updatedRequest = processedRequest.toBuilder()
-                            .minPrice(minPrice != null ? minPrice : processedRequest.getMinPrice())
-                            .maxPrice(maxPrice != null ? maxPrice : processedRequest.getMaxPrice())
-                            .bodyType(bodyType != null && !bodyType.isEmpty() ? bodyType : processedRequest.getBodyType())
-                            .engineType(engineType != null && !engineType.isEmpty() ? engineType : processedRequest.getEngineType())
-                            .longitude(result.latLng() != null ? result.latLng().lng : processedRequest.getLongitude())
-                            .latitude(result.latLng() != null ? result.latLng().lat : processedRequest.getLatitude())
-                            .distance(distance > 0 ? distance : processedRequest.getDistance())
-                            .build();
+            // Replace fields based on whether front-end input is present, or keep original values
+            SearchVehicleListRequest updatedRequest = processedRequest.toBuilder().minPrice(minPrice != null ? minPrice : processedRequest.getMinPrice()).maxPrice(maxPrice != null ? maxPrice : processedRequest.getMaxPrice()).bodyType(bodyType != null && !bodyType.isEmpty() ? bodyType : processedRequest.getBodyType()).engineType(engineType != null && !engineType.isEmpty() ? engineType : processedRequest.getEngineType()).longitude(result.latLng() != null ? result.latLng().lng : processedRequest.getLongitude()).latitude(result.latLng() != null ? result.latLng().lat : processedRequest.getLatitude()).distance(distance > 0 ? distance : processedRequest.getDistance()).build();
 
-                    logger.info("Updated request: {}", updatedRequest);
 
-                    return Mono.fromCallable(() -> executeSearch(updatedRequest, pageable));
-                })
-                .doOnError(e -> logger.error("Error occurred: {}", e.getMessage()))
-                .block();
+            return Mono.fromCallable(() -> getSearchVehiclesResponse(pageable, updatedRequest));
+        }).doOnError(e -> logger.error("Error occurred: {}", e.getMessage())).block();
+    }
+
+    @NotNull
+    private SearchVehiclesResponse getSearchVehiclesResponse(Pageable pageable, SearchVehicleListRequest updatedRequest) {
+        SearchVehiclesResponse searchVehiclesResponse = executeSearch(updatedRequest, pageable);
+        // Relaxed Search
+        if (searchVehiclesResponse.getVehicles().isEmpty()) {
+            relaxSearchParams(updatedRequest);
+            searchVehiclesResponse.setSearchType(SearchTypeEnum.RELAX);
+            searchVehiclesResponse = executeSearch(updatedRequest, pageable);
+        } else {
+            searchVehiclesResponse.setSearchType(SearchTypeEnum.PRECISE);
+        }
+        return searchVehiclesResponse;
     }
 
     @NotNull

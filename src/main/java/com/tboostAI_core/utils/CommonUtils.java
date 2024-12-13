@@ -23,7 +23,7 @@ public class CommonUtils {
 
     public static <T> Page<T> listToPage(List<T> list, Pageable pageable) {
         int start = (int) pageable.getOffset();
-        logger.info("start is {}, page size is{}, list size is{}", start, pageable.getPageSize(), list.size());
+        logger.info("listToPage - start is {}, page size is {}, list size is{}", start, pageable.getPageSize(), list.size());
         int end = Math.min(start + pageable.getPageSize(), list.size());
 
         // 如果 start 超出 list.size()，返回空分页

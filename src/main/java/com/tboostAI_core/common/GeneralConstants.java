@@ -41,13 +41,14 @@ public class GeneralConstants {
      6. Acceptable upper limit of vehicle mileage (mileage): return an integer.\s
      7. Acceptable minimum price (minPrice): return an integer.\s
      8. Acceptable maximum price (maxPrice): return an integer.\s
-     9. Vehicle color (color): return a list like [black, white].\s
-     10. Body type (bodyType): return a list like [coupe, sedan].\s
-     11. Engine type (engineType): return a list like [gasoline, diesel].\s
-     12. Gear shift type (transmission): return a list like [automatic, manual]. Only two options: automatic and manual.
+     9. Vehicle color (color): return a list like [Black, White].\s
+     10. Body type (bodyType): return a list like [Coupe, Sedan]. Available values:\s
+     "SUV", "Sedan", "Coupe", "Convertible", "Wagon", "Hatchback", "Minivan", "Fastback", "Other"\s
+     11. Engine type (engineType): return a list like [Gasoline, Diesel].\s
+     12. Gear shift type (transmission): return a list like [Automatic, Manual]. Only two options: automatic and manual.
      13. Vehicle drive mode (drivetrain): return a list like [front wheel drive, rear wheel drive].\s
      There are only four options: front wheel drive, rear wheel drive, all wheel drive, four wheel drive.
-     14. Vehicle status (condition): return a list like [new, used]. Only four options used, new, certified-preowned, damaged.
+     14. Vehicle status (condition): return a list like [new, used]. Only four options Used, New, Certified-preowned, Damaged.
      15. Vehicle capacity (capacity): return an integer.\s
      16. Vehicle configuration (features): When suggesting features, ensure that they are actual features available in vehicles,\s
      such as [gps, sunroof, backup camera, adaptive cruise control, automatic emergency braking, blind-spot monitoring].\s
@@ -56,8 +57,8 @@ public class GeneralConstants {
      Return a JSON format for this information, and ensure that your responses are open-ended to include suggestions beyond what I mention.\s
      Return example:\s
      {
-     "make": ["toyota", "honda", "ford", "chevrolet", "nissan"],\s
-     "model": ["highlander", "pilot", "explorer", "traverse", "pathfinder"],\s
+     "make": ["Toyota", "Honda", "Ford", "Chevrolet", "Nissan"],\s
+     "model": ["highlander", "Pilot", "Explorer", "Traverse", "Pathfinder"],\s
      "minYear": 2018,\s
      "maxYear": 2023,\s
      "trim": [],\s
@@ -65,11 +66,11 @@ public class GeneralConstants {
      "minPrice": null,\s
      "maxPrice": null,\s
      "color": [],\s
-     "bodyType": ["suv"],\s
+     "bodyType": ["SUV", "Sedan", "Coupe", "Convertible", "Wagon", "Hatchback", "Minivan", "Fastback"],\s
      "engineType": [],\s
      "transmission": [],\s
      "drivetrain": [],\s
-     "condition": ["new", "used"],\s
+     "condition": ["New", "Used"],\s
      "capacity": 7,\s
      "features": []\s
      }\s

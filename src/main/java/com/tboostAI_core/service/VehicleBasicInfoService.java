@@ -66,7 +66,7 @@ public class VehicleBasicInfoService {
     }
 
 
-    public SearchVehiclesResponse searchVehicles(List<String> make, List<String> model, Integer minYear, Integer maxYear, List<String> trim, Integer mileage, Double minPrice, Double maxPrice, List<String> color, List<String> bodyType, List<String> engineType, List<String> transmission, List<String> drivetrain, String address, List<String> condition, Integer capacity, List<String> features, int distance, Pageable pageable) {
+    public SearchVehiclesResponse searchVehicles(List<String> make, List<String> model, Integer minYear, Integer maxYear, List<String> trim, Double mileage, Double minPrice, Double maxPrice, List<String> color, List<String> bodyType, List<String> engineType, List<String> transmission, List<String> drivetrain, String address, List<String> condition, Integer capacity, List<String> features, Double distance, Pageable pageable) {
 
 
         LatLng latLng = googleGeocodingService.getLatLngFromAddress(address).block();
@@ -90,6 +90,9 @@ public class VehicleBasicInfoService {
         searchVehicleListRequest.setColor(null);
         searchVehicleListRequest.setModel(null);
         searchVehicleListRequest.setTrim(null);
+        searchVehicleListRequest.setTransmission(null);
+        searchVehicleListRequest.setDrivetrain(null);
+        searchVehicleListRequest.setCondition(null);
         UpdateUtils.applyIfNotNullAndCondition(
                 searchVehicleListRequest::setDistance,
                 searchVehicleListRequest.getDistance(),
@@ -138,13 +141,15 @@ public class VehicleBasicInfoService {
         // Update max year with additional logic
         Calendar calendar = Calendar.getInstance();
         int currentYear = calendar.get(Calendar.YEAR);
-        if(searchVehicleListRequest.getMaxYear() != null) {
-            UpdateUtils.applyIfNotNullAndCondition(
+        if(searchVehicleListRequest.getMaxYear() != null
+        && searchVehicleListRequest.getMaxYear() + RELAX_SEARCH_YEAR_RATE <= currentYear) {
+            UpdateUtils.setIfNotNull(
                     searchVehicleListRequest::setMaxYear,
-                    searchVehicleListRequest.getMaxYear() + RELAX_SEARCH_YEAR_RATE,
-                    searchVehicleListRequest.getMaxYear() + RELAX_SEARCH_YEAR_RATE <= currentYear
+                    searchVehicleListRequest.getMaxYear() + RELAX_SEARCH_YEAR_RATE
             );
         }
+
+        logger.info("VehicleBasicInfoService: relaxSearchParams - Relax Search Vehicle list request: {}", searchVehicleListRequest);
     }
 
     private SearchVehiclesResponse executeSearch(SearchVehicleListRequest searchVehicleListRequest, Pageable pageable) {
@@ -234,6 +239,7 @@ public class VehicleBasicInfoService {
 
                 Predicate distancePredicate = cb.lessThanOrEqualTo(distanceExpression, maxDistanceInMeters);
                 predicates.add(distancePredicate);
+                logger.info("VehicleBasicInfoService: executeSearch - Search distance is : {}", maxDistanceInMeters);
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
@@ -269,7 +275,14 @@ public class VehicleBasicInfoService {
             }
 
             // Replace fields based on whether front-end input is present, or keep original values
-            SearchVehicleListRequest updatedRequest = processedRequest.toBuilder().minPrice(minPrice != null ? minPrice : processedRequest.getMinPrice()).maxPrice(maxPrice != null ? maxPrice : processedRequest.getMaxPrice()).bodyType(bodyType != null && !bodyType.isEmpty() ? bodyType : processedRequest.getBodyType()).engineType(engineType != null && !engineType.isEmpty() ? engineType : processedRequest.getEngineType()).longitude(result.latLng() != null ? result.latLng().lng : processedRequest.getLongitude()).latitude(result.latLng() != null ? result.latLng().lat : processedRequest.getLatitude()).distance(distance > 0 ? distance : processedRequest.getDistance()).build();
+            SearchVehicleListRequest updatedRequest = processedRequest.toBuilder()
+                    .minPrice(minPrice != null ? minPrice : processedRequest.getMinPrice())
+                    .maxPrice(maxPrice != null ? maxPrice : processedRequest.getMaxPrice())
+                    .bodyType(bodyType != null && !bodyType.isEmpty() ? bodyType : processedRequest.getBodyType())
+                    .engineType(engineType != null && !engineType.isEmpty() ? engineType : processedRequest.getEngineType())
+                    .longitude(result.latLng() != null ? result.latLng().lng : processedRequest.getLongitude())
+                    .latitude(result.latLng() != null ? result.latLng().lat : processedRequest.getLatitude())
+                    .distance(distance > 0 ? distance : processedRequest.getDistance()).build();
 
 
             return Mono.fromCallable(() -> getSearchVehiclesResponse(pageable, updatedRequest));
@@ -282,8 +295,8 @@ public class VehicleBasicInfoService {
         // Relaxed Search
         if (searchVehiclesResponse.getVehicles().isEmpty()) {
             relaxSearchParams(updatedRequest);
-            searchVehiclesResponse.setSearchType(SearchTypeEnum.RELAX);
             searchVehiclesResponse = executeSearch(updatedRequest, pageable);
+            searchVehiclesResponse.setSearchType(SearchTypeEnum.RELAX);
         } else {
             searchVehiclesResponse.setSearchType(SearchTypeEnum.PRECISE);
         }

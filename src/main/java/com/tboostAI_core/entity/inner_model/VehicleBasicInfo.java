@@ -11,6 +11,7 @@ import java.util.List;
 @Builder
 public class VehicleBasicInfo {
 
+    private long uuid;
     private String make;
     private String model;
     private int year;

@@ -1,5 +1,6 @@
 package com.tboostAI_core.controller;
 
+import com.tboostAI_core.common.SearchTypeEnum;
 import com.tboostAI_core.dto.SearchVehiclesResponse;
 import com.tboostAI_core.dto.VehicleBasicInfoDTO;
 import com.tboostAI_core.service.VehicleBasicInfoService;
@@ -14,6 +15,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,8 +32,11 @@ public class VehicleController {
 
     @Resource
     private VehicleBasicInfoService vehicleBasicInfoService;
+    @Resource
+    private PagedResourcesAssembler<VehicleBasicInfoDTO> pagedResourcesAssembler;
 
     private static final Logger logger = LoggerFactory.getLogger(VehicleController.class);
+
 
     @Operation(
             summary = "Get vehicle details by UUID",
@@ -119,7 +125,7 @@ public class VehicleController {
             @ApiResponse(responseCode = "400", description = "Invalid parameters provided")
     })
     @GetMapping("/search-by-llm")
-    public ResponseEntity<SearchVehiclesResponse> searchVehicles(
+    public ResponseEntity<ApiResponseEntity> searchVehicles(
             @RequestParam Double minPrice,
             @RequestParam Double maxPrice,
             @RequestParam List<String> bodyType,
@@ -137,8 +143,7 @@ public class VehicleController {
 
         SearchVehiclesResponse searchVehiclesResponse = vehicleBasicInfoService.searchVehiclesByLLM(
                 sessionID, minPrice, maxPrice, bodyType, engineType, content, address, distance, pageable);
-
-        return searchVehiclesResponse != null ? ResponseEntity.ok(searchVehiclesResponse) : ResponseEntity.notFound().build();
+        return getApiResponseEntityResponseEntity(searchVehiclesResponse);
     }
 
     @Operation(
@@ -150,13 +155,13 @@ public class VehicleController {
             @ApiResponse(responseCode = "400", description = "Invalid parameters provided")
     })
     @GetMapping("/search")
-    public ResponseEntity<SearchVehiclesResponse> searchVehicles(
+    public ResponseEntity<ApiResponseEntity> searchVehicles(
             @RequestParam List<String> make,
             @RequestParam List<String> model,
             @RequestParam Integer minYear,
             @RequestParam Integer maxYear,
             @RequestParam List<String> trim,
-            @RequestParam Integer mileage,
+            @RequestParam Double mileage,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam List<String> color,
@@ -168,7 +173,7 @@ public class VehicleController {
             @RequestParam List<String> condition,
             @RequestParam int capacity,
             @RequestParam List<String> features,
-            @RequestParam(required = false, defaultValue = DEFAULT_DISTANCE) int distance,
+            @RequestParam(required = false, defaultValue = DEFAULT_DISTANCE) Double distance,
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = DEFAULT_PAGE_SIZE) Integer pageSize) {
 
@@ -177,6 +182,17 @@ public class VehicleController {
                 make, model, minYear, maxYear, trim, mileage, minPrice, maxPrice, color, bodyType, engineType,
                 transmission, drivetrain, address, condition, capacity, features, distance, pageable);
 
-        return searchVehiclesResponse != null ? ResponseEntity.ok(searchVehiclesResponse) : ResponseEntity.notFound().build();
+        return getApiResponseEntityResponseEntity(searchVehiclesResponse);
     }
+
+    private ResponseEntity<ApiResponseEntity> getApiResponseEntityResponseEntity(SearchVehiclesResponse searchVehiclesResponse) {
+        if (searchVehiclesResponse.getVehicles().isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        PagedModel<EntityModel<VehicleBasicInfoDTO>> vehicleBasicInfos = pagedResourcesAssembler.toModel(searchVehiclesResponse.getVehicles());
+        ApiResponseEntity apiResponseEntity = new ApiResponseEntity(searchVehiclesResponse.getSearchType(), vehicleBasicInfos);
+        return ResponseEntity.ok(apiResponseEntity);
+    }
+
+    public record ApiResponseEntity(SearchTypeEnum searchTypeEnum, PagedModel<EntityModel<VehicleBasicInfoDTO>> pagedModel){}
 }

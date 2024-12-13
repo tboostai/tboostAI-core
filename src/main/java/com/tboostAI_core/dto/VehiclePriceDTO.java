@@ -1,6 +1,5 @@
 package com.tboostAI_core.dto;
 
-import com.tboostAI_core.entity.VehicleBasicInfoEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -13,8 +12,8 @@ public class VehiclePriceDTO {
     @Schema(description = "The unique identifier for the vehicle price entry", example = "101")
     private Long id;
 
-    @Schema(description = "The vehicle information associated with this price", implementation = VehicleBasicInfoEntity.class)
-    private VehicleBasicInfoEntity vehicle;
+    @Schema(description = "The vehicle information associated with this price", implementation = VehicleBasicInfoDTO.class)
+    private VehicleBasicInfoDTO vehicle;
 
     @Schema(description = "The price of the vehicle in the specified currency", example = "25000.00")
     private BigDecimal price;

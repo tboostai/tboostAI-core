@@ -11,6 +11,8 @@ import java.util.List;
 @Schema(name = "VehicleBasicInfoDTO", description = "DTO representing basic information about a vehicle, including specifications, condition, and location")
 public class VehicleBasicInfoDTO {
 
+        @Schema(description = "The uuid of this item in DB", example = "1")
+        private long uuid;
         @Schema(description = "The make of the vehicle", example = "Toyota")
         private String make;
 

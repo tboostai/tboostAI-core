@@ -14,7 +14,7 @@ public class SearchVehicleListRequest implements Serializable {
     private Integer minYear;
     private Integer maxYear;
     private List<String> trim;
-    private Integer mileage;
+    private Double mileage;
     private Double minPrice;
     private Double maxPrice;
     private List<String> color;
@@ -27,5 +27,5 @@ public class SearchVehicleListRequest implements Serializable {
     private List<String> condition;
     private Integer capacity;
     private List<String> features;
-    private Integer distance;
+    private Double distance;
 }

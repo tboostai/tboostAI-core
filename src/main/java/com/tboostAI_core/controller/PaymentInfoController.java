@@ -1,7 +1,7 @@
 package com.tboostAI_core.controller;
 
 import com.tboostAI_core.dto.PaymentInfoDTO;
-import com.tboostAI_core.service.PaymentInfoService;
+import com.tboostAI_core.service.impl.PaymentInfoServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -19,10 +19,10 @@ import java.util.List;
 @Tag(name = "Payment info related APIs", description = "APIs about payment info")
 public class PaymentInfoController {
 
-    private final PaymentInfoService paymentInfoService;
+    private final PaymentInfoServiceImpl paymentInfoServiceImpl;
 
-    public PaymentInfoController(PaymentInfoService paymentInfoService) {
-        this.paymentInfoService = paymentInfoService;
+    public PaymentInfoController(PaymentInfoServiceImpl paymentInfoServiceImpl) {
+        this.paymentInfoServiceImpl = paymentInfoServiceImpl;
     }
 
     @Operation(
@@ -52,7 +52,7 @@ public class PaymentInfoController {
     })
     @GetMapping("/{vehicleId}")
     public ResponseEntity<List<PaymentInfoDTO>> getPaymentInfoByVehicleId(@PathVariable("vehicleId") Long vehicleId) {
-        List<PaymentInfoDTO> paymentInfoDTOS = paymentInfoService.getPaymentInfosByVehicleId(vehicleId);
+        List<PaymentInfoDTO> paymentInfoDTOS = paymentInfoServiceImpl.getPaymentInfosByVehicleId(vehicleId);
 
         if (paymentInfoDTOS == null || paymentInfoDTOS.isEmpty()) {
             return ResponseEntity.notFound().build();

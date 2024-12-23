@@ -1,6 +1,8 @@
 package com.tboostAI_core.controller;
 
-import com.tboostAI_core.service.VehicleBasicInfoService;
+import com.tboostAI_core.dto.AIChatResp;
+import com.tboostAI_core.service.impl.ChatServiceImpl;
+import com.tboostAI_core.service.impl.VehicleBasicInfoServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -19,7 +21,9 @@ public class ChatController {
     private static final Logger logger = LoggerFactory.getLogger(ChatController.class);
 
     @Resource
-    private VehicleBasicInfoService vehicleBasicInfoService;
+    private VehicleBasicInfoServiceImpl vehicleBasicInfoServiceImpl;
+    @Resource
+    private ChatServiceImpl chatServiceImpl;
 
     @Operation(
             summary = "Create a new chat session",
@@ -38,7 +42,7 @@ public class ChatController {
     @PostMapping("/create-session")
     public ResponseEntity<String> createSession() {
         logger.info("Start create session");
-        String sessionId = vehicleBasicInfoService.createNewSessionForChat();
+        String sessionId = chatServiceImpl.createNewSessionForChat();
         return ResponseEntity.ok(sessionId);
     }
 
@@ -61,7 +65,13 @@ public class ChatController {
     @DeleteMapping("/delete-session")
     public ResponseEntity<String> deleteSession(@RequestParam String sessionId) {
         logger.info("Start delete session ID {}", sessionId);
-        vehicleBasicInfoService.deleteCurrentSessionForChat(sessionId);
+        chatServiceImpl.deleteCurrentSessionForChat(sessionId);
         return ResponseEntity.ok(sessionId);
+    }
+    @PostMapping("/submit-message")
+    public ResponseEntity<AIChatResp> submitMessage(@RequestParam String sessionId, @RequestParam String message) {
+        logger.info("Submit message for session ID {}, message is {}", sessionId, message);
+        AIChatResp aiChatResp = chatServiceImpl.submitMessage(sessionId, message);
+        return null;
     }
 }

@@ -3,7 +3,7 @@ package com.tboostAI_core.controller;
 import com.tboostAI_core.common.SearchTypeEnum;
 import com.tboostAI_core.dto.SearchVehiclesResponse;
 import com.tboostAI_core.dto.VehicleBasicInfoDTO;
-import com.tboostAI_core.service.VehicleBasicInfoService;
+import com.tboostAI_core.service.impl.VehicleBasicInfoServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -31,12 +31,13 @@ import static com.tboostAI_core.common.GeneralConstants.DEFAULT_PAGE_SIZE;
 public class VehicleController {
 
     @Resource
-    private VehicleBasicInfoService vehicleBasicInfoService;
+    private VehicleBasicInfoServiceImpl vehicleBasicInfoServiceImpl;
     @Resource
     private PagedResourcesAssembler<VehicleBasicInfoDTO> pagedResourcesAssembler;
 
     private static final Logger logger = LoggerFactory.getLogger(VehicleController.class);
 
+    public record ApiResponseEntity(SearchTypeEnum searchTypeEnum, PagedModel<EntityModel<VehicleBasicInfoDTO>> pagedModel){}
 
     @Operation(
             summary = "Get vehicle details by UUID",
@@ -77,7 +78,7 @@ public class VehicleController {
     })
     @GetMapping("/vehicle/{uuid}")
     public ResponseEntity<VehicleBasicInfoDTO> getVehicleByVin(@PathVariable Long uuid) {
-        VehicleBasicInfoDTO vehicleDTO = vehicleBasicInfoService.getVehicleByUuid(uuid);
+        VehicleBasicInfoDTO vehicleDTO = vehicleBasicInfoServiceImpl.getVehicleByUuid(uuid);
         return vehicleDTO != null ? ResponseEntity.ok(vehicleDTO) : ResponseEntity.notFound().build();
     }
 
@@ -141,7 +142,7 @@ public class VehicleController {
 
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by("listingDate").descending());
 
-        SearchVehiclesResponse searchVehiclesResponse = vehicleBasicInfoService.searchVehiclesByLLM(
+        SearchVehiclesResponse searchVehiclesResponse = vehicleBasicInfoServiceImpl.searchVehiclesByLLM(
                 sessionID, minPrice, maxPrice, bodyType, engineType, content, address, distance, pageable);
         return getApiResponseEntityResponseEntity(searchVehiclesResponse);
     }
@@ -178,7 +179,7 @@ public class VehicleController {
             @RequestParam(required = false, defaultValue = DEFAULT_PAGE_SIZE) Integer pageSize) {
 
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by("listingDate").descending());
-        SearchVehiclesResponse searchVehiclesResponse = vehicleBasicInfoService.searchVehicles(
+        SearchVehiclesResponse searchVehiclesResponse = vehicleBasicInfoServiceImpl.searchVehicles(
                 make, model, minYear, maxYear, trim, mileage, minPrice, maxPrice, color, bodyType, engineType,
                 transmission, drivetrain, address, condition, capacity, features, distance, pageable);
 
@@ -193,6 +194,4 @@ public class VehicleController {
         ApiResponseEntity apiResponseEntity = new ApiResponseEntity(searchVehiclesResponse.getSearchType(), vehicleBasicInfos);
         return ResponseEntity.ok(apiResponseEntity);
     }
-
-    public record ApiResponseEntity(SearchTypeEnum searchTypeEnum, PagedModel<EntityModel<VehicleBasicInfoDTO>> pagedModel){}
 }

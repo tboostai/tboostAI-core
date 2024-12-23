@@ -1,7 +1,7 @@
 package com.tboostAI_core.controller;
 
 import com.tboostAI_core.dto.EbayAdditionalInfoDTO;
-import com.tboostAI_core.service.EbayAdditionalInfoService;
+import com.tboostAI_core.service.impl.EbayAdditionalInfoServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -16,10 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Ebay archive info API", description = "API for accessing additional Ebay information stored for potential future use")
 public class EbayAdditionalInfoController {
 
-    private final EbayAdditionalInfoService ebayAdditionalInfoService;
+    private final EbayAdditionalInfoServiceImpl ebayAdditionalInfoServiceImpl;
 
-    public EbayAdditionalInfoController(EbayAdditionalInfoService ebayAdditionalInfoService) {
-        this.ebayAdditionalInfoService = ebayAdditionalInfoService;
+    public EbayAdditionalInfoController(EbayAdditionalInfoServiceImpl ebayAdditionalInfoServiceImpl) {
+        this.ebayAdditionalInfoServiceImpl = ebayAdditionalInfoServiceImpl;
     }
 
     @Operation(
@@ -44,7 +44,7 @@ public class EbayAdditionalInfoController {
     })
     @GetMapping("/additional")
     public ResponseEntity<EbayAdditionalInfoDTO> getEbayAdditionalInfoByVehicleId(Long vehicleId) {
-        EbayAdditionalInfoDTO ebayAdditionalInfoDTO = ebayAdditionalInfoService.getEbayAdditionalInfoByVehicleId(vehicleId);
+        EbayAdditionalInfoDTO ebayAdditionalInfoDTO = ebayAdditionalInfoServiceImpl.getEbayAdditionalInfoByVehicleId(vehicleId);
         return ebayAdditionalInfoDTO != null ? ResponseEntity.ok(ebayAdditionalInfoDTO) : ResponseEntity.notFound().build();
     }
 }

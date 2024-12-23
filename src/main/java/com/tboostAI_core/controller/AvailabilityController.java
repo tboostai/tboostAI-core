@@ -1,7 +1,7 @@
 package com.tboostAI_core.controller;
 
 import com.tboostAI_core.dto.AvailabilityDTO;
-import com.tboostAI_core.service.AvailabilityService;
+import com.tboostAI_core.service.impl.AvailabilityServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AvailabilityController {
 
     @Resource
-    private AvailabilityService availabilityService;
+    private AvailabilityServiceImpl availabilityServiceImpl;
 
     @Operation(
             summary = "Get vehicle availability by ID",
@@ -46,7 +46,7 @@ public class AvailabilityController {
     })
     @GetMapping("/{uuid}")
     public ResponseEntity<AvailabilityDTO> getAvailabilityById(@PathVariable Long uuid) {
-        AvailabilityDTO availabilityDTO = availabilityService.getAvailabilityById(uuid);
+        AvailabilityDTO availabilityDTO = availabilityServiceImpl.getAvailabilityById(uuid);
         return availabilityDTO != null ? ResponseEntity.ok(availabilityDTO) : ResponseEntity.notFound().build();
     }
 }

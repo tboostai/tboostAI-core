@@ -1,7 +1,7 @@
 package com.tboostAI_core.controller;
 
 import com.tboostAI_core.dto.PostDTO;
-import com.tboostAI_core.service.PostService;
+import com.tboostAI_core.service.impl.PostServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -17,10 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Post info related APIs", description = "APIs about post info")
 public class PostController {
 
-    private final PostService postService;
+    private final PostServiceImpl postServiceImpl;
 
-    public PostController(PostService postService) {
-        this.postService = postService;
+    public PostController(PostServiceImpl postServiceImpl) {
+        this.postServiceImpl = postServiceImpl;
     }
 
     @Operation(
@@ -56,7 +56,7 @@ public class PostController {
     })
     @GetMapping("/{vehicleId}")
     public ResponseEntity<PostDTO> getPostByVehicleId(@PathVariable("vehicleId") Long vehicleId) {
-        PostDTO postDTO = postService.getPostByVehicleId(vehicleId);
+        PostDTO postDTO = postServiceImpl.getPostByVehicleId(vehicleId);
         return postDTO != null ? ResponseEntity.ok(postDTO) : ResponseEntity.notFound().build();
     }
 }

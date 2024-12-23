@@ -1,7 +1,7 @@
 package com.tboostAI_core.controller;
 
 import com.tboostAI_core.dto.SellerDTO;
-import com.tboostAI_core.service.SellerService;
+import com.tboostAI_core.service.impl.SellerServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class SellerController {
 
     @Resource
-    private SellerService sellerService;
+    private SellerServiceImpl sellerServiceImpl;
 
     @Operation(
             summary = "Get seller details by ID",
@@ -42,7 +42,7 @@ public class SellerController {
     })
     @GetMapping("/{uuid}")
     public ResponseEntity<SellerDTO> getVehicleByVin(@PathVariable Long uuid) {
-        SellerDTO sellerDTO = sellerService.getSellerById(uuid);
+        SellerDTO sellerDTO = sellerServiceImpl.getSellerById(uuid);
         return sellerDTO != null ? ResponseEntity.ok(sellerDTO) : ResponseEntity.notFound().build();
     }
 }

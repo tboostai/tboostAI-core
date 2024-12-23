@@ -1,7 +1,7 @@
 package com.tboostAI_core.controller;
 
 import com.tboostAI_core.dto.VehiclePriceDTO;
-import com.tboostAI_core.service.PriceService;
+import com.tboostAI_core.service.impl.PriceServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -19,10 +19,10 @@ import java.util.List;
 @Tag(name = "Price info related APIs", description = "APIs about price info")
 public class PriceController {
 
-    private final PriceService priceService;
+    private final PriceServiceImpl priceServiceImpl;
 
-    public PriceController(PriceService priceService) {
-        this.priceService = priceService;
+    public PriceController(PriceServiceImpl priceServiceImpl) {
+        this.priceServiceImpl = priceServiceImpl;
     }
 
     @Operation(
@@ -57,7 +57,7 @@ public class PriceController {
     })
     @GetMapping("/{vehicleId}")
     public ResponseEntity<List<VehiclePriceDTO>> getPricesByVehicleId(@PathVariable Long vehicleId) {
-        List<VehiclePriceDTO> vehiclePriceDTOList = priceService.findAllPricesByVehicleId(vehicleId);
+        List<VehiclePriceDTO> vehiclePriceDTOList = priceServiceImpl.findAllPricesByVehicleId(vehicleId);
 
         if (vehiclePriceDTOList.isEmpty()) {
             return ResponseEntity.notFound().build();

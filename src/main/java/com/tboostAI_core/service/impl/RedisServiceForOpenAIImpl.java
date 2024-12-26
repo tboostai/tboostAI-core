@@ -2,6 +2,7 @@ package com.tboostAI_core.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tboostAI_core.common.PromptTypeEnum;
 import com.tboostAI_core.entity.request_entity.Message;
 import com.tboostAI_core.service.RedisServiceForOpenAI;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import static com.tboostAI_core.common.GeneralConstants.*;
 @Service
 public class RedisServiceForOpenAIImpl implements RedisServiceForOpenAI {
 
+    //TODO 1. Add refresh sessionId 2. Persist chat info
     private final LettuceConnectionFactory lettuceConnectionFactory;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -39,19 +41,26 @@ public class RedisServiceForOpenAIImpl implements RedisServiceForOpenAI {
     }
 
     // Create new chat session
-    public String createNewSessionForChat() {
+    public String createNewSessionForChat(PromptTypeEnum promptType) {
         logger.info("Before create new session, redis host is {}, port is {}",
                 lettuceConnectionFactory.getHostName(), lettuceConnectionFactory.getPort());
         String sessionId = UUID.randomUUID().toString();
-        Message systemMessage = generateSystemMessage();
+        logger.info("RedisServiceForOpenAIImpl::createNewSessionForChat, SessionId is {}", sessionId);
+        // Dynamically select the prompt based on input
+        String systemPrompt = selectPrompt(promptType);
+        logger.info("RedisServiceForOpenAIImpl::createNewSessionForChat, System prompt is {}", systemPrompt);
+        // Generate system message using the selected prompt
+        Message systemMessage = generateSystemMessage(systemPrompt);
+
         this.saveMessageToList(sessionId, systemMessage);
         return sessionId;
     }
 
     // Save chat history
     public void saveMessageToList(String sessionId, Message message) {
+        logger.info("RedisServiceForOpenAIImpl:saveMessageToList - Session ID is {}", sessionId);
         String compressedMsg = compressMessage(message);
-        logger.info("Session ID is {}", sessionId);
+        logger.info("RedisServiceForOpenAIImpl:saveMessageToList - Session ID is {}", sessionId);
         redisTemplate.opsForList().rightPush(sessionId, compressedMsg);
         redisTemplate.expire(sessionId, CHAT_SESSION_TIMEOUT, TimeUnit.SECONDS);
     }
@@ -135,11 +144,18 @@ public class RedisServiceForOpenAIImpl implements RedisServiceForOpenAI {
         return null;
     }
 
-    private Message generateSystemMessage() {
+    private Message generateSystemMessage(String systemPrompt) {
         Message message = new Message();
         message.setRole(OPENAI_SYSTEM);
-        message.setContent(com.tboostAI_core.common.GeneralConstants.OPENAI_SYSTEM_DEFAULT_MSG);
+        message.setContent(systemPrompt);
 
         return message;
+    }
+
+    private String selectPrompt(PromptTypeEnum promptType) {
+        return switch (promptType) {
+            case CHAT -> OPENAI_CHAT_CONTENT_PROMPT;
+            case LLM -> OPENAI_SYSTEM_LLM_MSG;
+        };
     }
 }

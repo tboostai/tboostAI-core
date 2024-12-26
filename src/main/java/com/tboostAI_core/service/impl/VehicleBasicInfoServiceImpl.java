@@ -177,7 +177,7 @@ public class VehicleBasicInfoServiceImpl implements VehicleBasicInfoService {
                 predicates.add(cb.lessThanOrEqualTo(root.get("mileage"), searchVehicleListRequest.getMileage()));
             }
             if (searchVehicleListRequest.getMinPrice() != null || searchVehicleListRequest.getMaxPrice() != null) {
-                // 子查询获取 priceType = 1 的现价
+                // 子查询获取 price Type = 1 的现价
                 Subquery<Double> subqueryPriceType1 = Objects.requireNonNull(query).subquery(Double.class);
                 Root<VehiclePriceEntity> priceRoot1 = subqueryPriceType1.from(VehiclePriceEntity.class);
                 subqueryPriceType1.select(priceRoot1.get("price").as(Double.class)).where(cb.equal(priceRoot1.get("vehicle"), root), cb.equal(priceRoot1.get("priceType"), 1)); // priceType = 1
@@ -268,7 +268,7 @@ public class VehicleBasicInfoServiceImpl implements VehicleBasicInfoService {
                 logger.info("processedRequestJsonStr: {}", processedRequestJsonStr);
 
                 // Generate and save assistant message to Redis
-                Message assistantMessage = generateMessage(OPENAI_ASSISTANT, processedRequestJsonStr);
+                Message assistantMessage = CommonUtils.generateMessage(OPENAI_ASSISTANT, processedRequestJsonStr);
                 logger.info("assistantMessage : {}", assistantMessage);
                 redisServiceForOpenAIImpl.saveMessageToList(sessionId, assistantMessage);
             } catch (JsonProcessingException e) {
@@ -306,33 +306,15 @@ public class VehicleBasicInfoServiceImpl implements VehicleBasicInfoService {
 
     @NotNull
     private Result generateMultipleInfo(String sessionId, String content, String address) {
-        List<Message> messages = new ArrayList<>();
+
         List<Object> messagesHistory = redisServiceForOpenAIImpl.getChatHistoryList(sessionId);
-
-        for (Object message : messagesHistory) {
-            if (message instanceof Message) {
-                messages.add((Message) message);
-            }
-        }
-
-        logger.info("Message History Size: {}", messages.size());
-        Message newUserMessage = generateMessage(OPENAI_USER, content);
-        messages.add(newUserMessage);
-
+        List<Message> messages = CommonUtils.addNewMessageToHistoryMessageList(content, messagesHistory);
         Mono<SearchVehicleListRequest> responseObj = webClientUtils.sendPostRequestInternal(tboostAILlmHost, messages, SearchVehicleListRequest.class);
 
         LatLng latLng = googleGeocodingServiceImpl.getLatLngFromAddress(address).block();
-        return new Result(newUserMessage, responseObj, latLng);
+        return new Result(messages.get(messages.size() - 1), responseObj, latLng);
     }
 
     private record Result(Message newUserMessage, Mono<SearchVehicleListRequest> responseObj, LatLng latLng) {
-    }
-
-    private Message generateMessage(String openAiRole, String content) {
-        Message newMessage = new Message();
-        newMessage.setContent(content);
-        newMessage.setRole(openAiRole);
-
-        return newMessage;
     }
 }

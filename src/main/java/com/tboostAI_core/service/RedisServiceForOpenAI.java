@@ -1,18 +1,19 @@
 package com.tboostAI_core.service;
 
+import com.tboostAI_core.common.PromptTypeEnum;
 import com.tboostAI_core.entity.request_entity.Message;
 
 import java.util.List;
 
 public interface RedisServiceForOpenAI {
     // Create new chat session
-    public String createNewSessionForChat();
+    String createNewSessionForChat(PromptTypeEnum promptType);
 
     // Save chat history
-    public void saveMessageToList(String sessionId, Message message);
+    void saveMessageToList(String sessionId, Message message);
 
     // Get chat history
-    public List<Object> getChatHistoryList(String sessionId);
+    List<Object> getChatHistoryList(String sessionId);
 
     // Delete chat session
     void deleteSession(String sessionId);

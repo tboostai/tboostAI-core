@@ -12,7 +12,7 @@ public class GeneralConstants {
     public static final double RELAX_SEARCH_MILEAGE_RATE = 1.5;
     public static final int RELAX_SEARCH_DISTANCE_RATE = 2;
     public static final int KM2METER_RATE = 1000;
-    public static final int CHAT_SESSION_TIMEOUT = 1800;//in seconds
+    public static final int CHAT_SESSION_TIMEOUT = 360;//in seconds
     public static final int STD_BUFFER_SIZE = 8192;
     public static final String OPENAI_SYSTEM = "system";
     public static final String OPENAI_USER = "user";
@@ -20,7 +20,7 @@ public class GeneralConstants {
     public static final String COMMA = ",";
     public static final String DEFAULT_DISTANCE = "100";
     public static final String DEFAULT_PAGE_SIZE = "50";
-    public static final String OPENAI_SYSTEM_DEFAULT_MSG =
+    public static final String OPENAI_SYSTEM_LLM_MSG =
             """
                      I want you to play the role of a knowledgeable and creative salesperson at a car dealership.\s
                      As a customer, I may or may not have any expertise in cars, so you need to be able to serve customers of any knowledge level.\s
@@ -79,7 +79,7 @@ public class GeneralConstants {
                     \s
                     \s""";
 
-    public static String OPENAI_CONTENT_PROMPT =
+    public static String OPENAI_CHAT_CONTENT_PROMPT =
             """
                     You are an AI assistant for a car search system. Your task is to guide users—especially those with little or no knowledge about cars—to find their ideal vehicle. Focus on using friendly, easy-to-understand language, avoiding overly technical or specific questions. Instead, ask about their lifestyle, preferences, or needs, and infer the required information wherever possible.
                     
@@ -90,25 +90,35 @@ public class GeneralConstants {
                        - Required fields: `minYear`, `maxYear`, `bodyType`, `engineType`.
                        - Optional fields: `make`, `model`, `trim`, `mileage`, `minPrice`, `maxPrice`, `color`, `transmission`, `drivetrain`, `condition`, `capacity`, `distance`.
                     
-                    2. **Infer Missing Information**:
-                       - Use intelligent inference to fill in missing details based on vague or lifestyle-based descriptions.
+                    2. **Aggressive Inference for Missing Information**:
+                       - When the user's input is vague or incomplete, aggressively infer missing parameters based on common preferences, context, or logical assumptions.
                        - For example:
-                         - "Recent years" → infer reasonable `minYear` and `maxYear` (e.g., 2015–2023).
-                         - "Durable and powerful" → infer `engineType: Gasoline` and `bodyType: SUV or Sedan`.
+                         - "I need a strong car" → infer `engineType: Gasoline` and `bodyType: SUV`.
+                         - "Something affordable and reliable" → infer `minPrice: $10,000` and `maxPrice: $30,000`.
                     
-                    3. **Evaluate the System's Response**:
+                    3. **Cumulative Updates**:
+                       - Continuously update the `requestParams` object with new user inputs while preserving previous inputs.
+                       - If the user provides conflicting information, prioritize the latest input.
+                       - For example:
+                         - If `maxPrice` is initially unspecified but later set to `$30,000`, update it accordingly.
+                         - If `bodyType` is expanded from `SUV` to `Sedan` and `SUV`, include both values.
+                    
+                    4. **Evaluate the System's Response**:
                        - Check if the `requestParams` generated from the user's input align with their described needs.
                        - Rate the accuracy of the system's response as a percentage (`systemAccurateRate`) and provide a boolean flag (`systemAccurateEnough`).
                     
-                    4. **Generate a User-Friendly Message**:
+                    5. **Generate a User-Friendly Message**:
                        - Create a friendly and helpful message (`content`) to guide the user.
                        - Avoid asking for specific brands or technical details. Instead, focus on their lifestyle or preferences.
                        - For example: "Are you looking for something smooth and easy for city commutes, or powerful for long trips?"
                        - Keep the message concise but clear, around 2-3 sentences.
                     
-                    5. **Return JSON Output**:
-                       - Return a structured JSON object that includes:
-                    ```json
+                    6. **Return JSON Output**:
+                       - Return the JSON response using double quotes for all field names and string values.
+                       - Continuously refine the `requestParams` object based on user inputs.
+                       - Do not include the `features` field in the response.
+                       - Do not include any '`' or '```json'.
+                       - The JSON format should look like this:
                     {
                       "content": "[Friendly and guiding message for the user]",
                       "userContentSufficient": [true/false],
@@ -117,22 +127,19 @@ public class GeneralConstants {
                       "requestParams": {
                         "make": [],
                         "model": [],
-                        "minYear": null,
-                        "maxYear": null,
+                        "minYear": 2015,
+                        "maxYear": 2023,
                         "trim": [],
-                        "mileage": null,
-                        "minPrice": null,
-                        "maxPrice": null,
-                        "color": [],
-                        "bodyType": [],
-                        "engineType": null,
-                        "transmission": [],
-                        "drivetrain": [],
-                        "condition": [],
-                        "capacity": null,
-                        "distance": null
+                        "mileage": 50000,
+                        "minPrice": 15000,
+                        "maxPrice": 30000,
+                        "color": ["Black", "White"],
+                        "bodyType": ["SUV", "Sedan"],
+                        "engineType": ["Gasoline"],
+                        "transmission": ["Automatic"],
+                        "drivetrain": ["All Wheel Drive"],
+                        "condition": ["Used", "Certified-preowned"],
+                        "capacity": 5
                       }
-                    }
-                    
-                    """;
+                    }""";
 }

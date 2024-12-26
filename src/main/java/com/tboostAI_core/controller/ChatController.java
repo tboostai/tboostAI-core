@@ -1,6 +1,7 @@
 package com.tboostAI_core.controller;
 
 import com.tboostAI_core.dto.AIChatResp;
+import com.tboostAI_core.entity.request_entity.SubmitMessageRequest;
 import com.tboostAI_core.service.impl.ChatServiceImpl;
 import com.tboostAI_core.service.impl.VehicleBasicInfoServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,8 +22,6 @@ public class ChatController {
     private static final Logger logger = LoggerFactory.getLogger(ChatController.class);
 
     @Resource
-    private VehicleBasicInfoServiceImpl vehicleBasicInfoServiceImpl;
-    @Resource
     private ChatServiceImpl chatServiceImpl;
 
     @Operation(
@@ -39,7 +38,7 @@ public class ChatController {
                     )
             )
     })
-    @PostMapping("/create-session")
+    @PostMapping("/create-chat-session")
     public ResponseEntity<String> createSession() {
         logger.info("Start create session");
         String sessionId = chatServiceImpl.createNewSessionForChat();
@@ -69,9 +68,22 @@ public class ChatController {
         return ResponseEntity.ok(sessionId);
     }
     @PostMapping("/submit-message")
-    public ResponseEntity<AIChatResp> submitMessage(@RequestParam String sessionId, @RequestParam String message) {
-        logger.info("Submit message for session ID {}, message is {}", sessionId, message);
-        AIChatResp aiChatResp = chatServiceImpl.submitMessage(sessionId, message);
-        return null;
+    public ResponseEntity<AIChatResp> submitMessage(@RequestBody SubmitMessageRequest request) {
+        logger.info("Submit message request received: {}", request);
+
+        try {
+            AIChatResp aiChatResp = chatServiceImpl.submitMessage(request.getSessionId(), request.getMessage());
+
+            if (aiChatResp == null) {
+                logger.error("AIChatResp is null for session ID {}", request.getSessionId());
+                return ResponseEntity.internalServerError().body(null);
+            }
+
+            return ResponseEntity.ok(aiChatResp);
+
+        } catch (Exception e) {
+            logger.error("Error while processing message for session ID {}: {}", request.getSessionId(), e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(null);
+        }
     }
 }

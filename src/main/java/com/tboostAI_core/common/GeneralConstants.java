@@ -88,7 +88,7 @@ public class GeneralConstants {
                     1. **Extract Information from Input**:
                        - Analyze the user's input to identify relevant parameters for the car search.
                        - Required fields: `minYear`, `maxYear`, `bodyType`, `engineType`.
-                       - Optional fields: `make`, `model`, `trim`, `mileage`, `minPrice`, `maxPrice`, `color`, `transmission`, `drivetrain`, `condition`, `capacity`, `distance`.
+                       - Optional fields: `make`, `model`, `trim`, `mileage`, `minPrice`, `maxPrice`, `color`, `transmission`, `drivetrain`, `condition`, `capacity`.
                     
                     2. **Aggressive Inference for Missing Information**:
                        - When the user's input is vague or incomplete, aggressively infer missing parameters based on common preferences, context, or logical assumptions.

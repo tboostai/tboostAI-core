@@ -116,7 +116,7 @@ public class GeneralConstants {
                     6. **Return JSON Output**:
                        - Return the JSON response using double quotes for all field names and string values.
                        - Continuously refine the `requestParams` object based on user inputs.
-                       - Do not include the `features` field in the response.
+                       - Do not include the `features` and `distance` fields in the response.
                        - Do not include any '`' or '```json'.
                        - The JSON format should look like this:
                     {

@@ -3,7 +3,6 @@ package com.tboostAI_core.controller;
 import com.tboostAI_core.dto.AIChatResp;
 import com.tboostAI_core.entity.request_entity.SubmitMessageRequest;
 import com.tboostAI_core.service.impl.ChatServiceImpl;
-import com.tboostAI_core.service.impl.VehicleBasicInfoServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -67,6 +66,70 @@ public class ChatController {
         chatServiceImpl.deleteCurrentSessionForChat(sessionId);
         return ResponseEntity.ok(sessionId);
     }
+
+    @Operation(
+            summary = "Submit a message to the chat session",
+            description = "Sends a user message to the AI chat session and receives a structured response, including the AI's message, whether the user's input was sufficient, the accuracy of the system's response, and the inferred search parameters for vehicles."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Message processed successfully",
+                    content = @io.swagger.v3.oas.annotations.media.Content(
+                            mediaType = "application/json",
+                            schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = AIChatResp.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "content": "Got it! Let's find something that's tough and keeps your costs in check. Are you thinking of using it for rugged adventures, or more for everyday use?",
+                                              "userContentSufficient": false,
+                                              "systemAccurateEnough": false,
+                                              "systemAccurateRate": "40%",
+                                              "requestParams": {
+                                                "make": ["Toyota"],
+                                                "model": ["RAV4"],
+                                                "minYear": 2015,
+                                                "maxYear": 2023,
+                                                "trim": [],
+                                                "mileage": null,
+                                                "minPrice": null,
+                                                "maxPrice": null,
+                                                "color": [],
+                                                "bodyType": ["SUV"],
+                                                "engineType": ["Gasoline"],
+                                                "transmission": [],
+                                                "drivetrain": [],
+                                                "condition": [],
+                                                "capacity": null
+                                              }
+                                            }"""
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Invalid input provided",
+                    content = @io.swagger.v3.oas.annotations.media.Content(
+                            mediaType = "application/json",
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "error": "Invalid request body",
+                                              "details": "Session ID cannot be null"
+                                            }"""
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Internal server error",
+                    content = @io.swagger.v3.oas.annotations.media.Content(
+                            mediaType = "application/json",
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "error": "Internal server error",
+                                              "details": "Unexpected error occurred while processing the message"
+                                            }"""
+                            )
+                    )
+            )
+    })
+
     @PostMapping("/submit-message")
     public ResponseEntity<AIChatResp> submitMessage(@RequestBody SubmitMessageRequest request) {
         logger.info("Submit message request received: {}", request);

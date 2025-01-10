@@ -50,27 +50,58 @@ public class VehicleController {
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
-                                              "make": "Toyota",
-                                              "model": "Camry",
-                                              "year": 2020,
-                                              "trim": "LE",
-                                              "vin": "1HGBH41JXMN109186",
-                                              "mileage": 30000,
-                                              "exteriorColor": "White",
-                                              "interiorColor": "Black",
-                                              "bodyType": "Sedan",
+                                              "uuid": 234,
+                                              "make": "Cadillac",
+                                              "model": "Escalade",
+                                              "year": 2022,
+                                              "trim": "4X4 ESV SPORT-EDITION(RARE PACKAGE)",
+                                              "vin": "1GYS4PKL7NR232864",
+                                              "mileage": 34449,
+                                              "exteriorColor": "Black",
+                                              "interiorColor": "Brown",
+                                              "bodyType": "SUV",
                                               "engineType": "Gasoline",
-                                              "engineSize": 2.5,
-                                              "cylinder": 4,
+                                              "engineSize": null,
+                                              "cylinder": 8,
                                               "transmission": "Automatic",
-                                              "drivetrain": "FWD",
+                                              "drivetrain": "four wheel drive",
                                               "location": {
-                                                "country": "United States",
-                                                "stateProvince": "California",
-                                                "city": "Los Angeles",
-                                                "postalCode": "90001"
-                                              }
-                                            }"""
+                                                "country": "US",
+                                                "stateProvince": "Michigan",
+                                                "city": "Redford",
+                                                "street": null,
+                                                "postalCode": "482**",
+                                                "unit": null,
+                                                "latitude": 42.3995939,
+                                                "longitude": -83.2958857
+                                              },
+                                              "vehicleCondition": "Used",
+                                              "engineInfo": null,
+                                              "cylinderInfo": null,
+                                              "warranty": "Vehicle has an existing warranty",
+                                              "vehicleTitle": "Rebuilt, Rebuildable & Reconstructed",
+                                              "capacity": 0,
+                                              "doors": 0,
+                                              "features": [
+                                                "sunroof",
+                                                "head-up display"
+                                              ],
+                                              "images": [
+                                                {
+                                                  "url": "https://i.ebayimg.com/images/g/VVgAAOSwWNRnAJc1/s-l1600.jpg",
+                                                  "width": 1024,
+                                                  "height": 683
+                                                }
+                                              ],
+                                              "listingDate": "2024-10-09T21:50:48.000+00:00",
+                                              "sourceId": 1,
+                                              "description": "2022 Cadillac Escalade ESV Sport Vehicle Information VIN: 1GYS4PKL7NR232864 Stock: Mileage: 34,449 Color: Black Raven Trans: 10-Speed Automatic Engine: 6.2 LITER V8 ENGINE MPG: 14 City / 19 Highway Drivetrain: 4X4 Description ((HOLLYWOOD STYLE)) ((ONE OWNER)) PLEASE CLICK ON THE ABOVE 24 PICTURES IN ORDER TO VIEW IN FULL SCREEN MODE.", \s
+                                              "aiDescription": [
+                                                "2022 Cadillac Escalade ESV Sport in Black Raven color",
+                                                " Equipped with a 10-Speed Automatic Transmission"
+                                              ]
+                                            }
+                                           \s"""
                             )
                     )
             ),
@@ -78,13 +109,79 @@ public class VehicleController {
     })
     @GetMapping("/vehicle/{uuid}")
     public ResponseEntity<VehicleBasicInfoDTO> getVehicleByVin(@PathVariable Long uuid) {
+        logger.info("VehicleController:getVehicleByVin - Search vehicle details by vehicle ID.");
         VehicleBasicInfoDTO vehicleDTO = vehicleBasicInfoServiceImpl.getVehicleByUuid(uuid);
         return vehicleDTO != null ? ResponseEntity.ok(vehicleDTO) : ResponseEntity.notFound().build();
     }
 
+//    @Operation(
+//            summary = "Search vehicles using LLM",
+//            description = "Search for vehicles based on user-provided parameters and content analyzed by LLM"
+//    )
+//    @ApiResponses({
+//            @ApiResponse(responseCode = "200", description = "Vehicles retrieved successfully",
+//                    content = @io.swagger.v3.oas.annotations.media.Content(
+//                            mediaType = "application/json",
+//                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+//                                    value = """
+//                                            {
+//                                              "_embedded": {
+//                                                "vehicleBasicInfoDTOList": [
+//                                                  {
+//                                                    "make": "Toyota",
+//                                                    "model": "Camry",
+//                                                    "year": 2020,
+//                                                    "trim": "LE",
+//                                                    "price": 25000.00,
+//                                                    "currency": "USD"
+//                                                  },
+//                                                  {
+//                                                    "make": "Honda",
+//                                                    "model": "Accord",
+//                                                    "year": 2019,
+//                                                    "trim": "EX",
+//                                                    "price": 22000.00,
+//                                                    "currency": "USD"
+//                                                  }
+//                                                ]
+//                                              },
+//                                              "page": {
+//                                                "size": 10,
+//                                                "totalElements": 50,
+//                                                "totalPages": 5,
+//                                                "number": 0
+//                                              }
+//                                            }"""
+//                            )
+//                    )
+//            ),
+//            @ApiResponse(responseCode = "400", description = "Invalid parameters provided")
+//    })
+//    @GetMapping("/search-by-llm")
+//    public ResponseEntity<ApiResponseEntity> searchVehicles(
+//            @RequestParam Double minPrice,
+//            @RequestParam Double maxPrice,
+//            @RequestParam List<String> bodyType,
+//            @RequestParam List<String> engineType,
+//            @RequestParam String address,
+//            @RequestBody String content,
+//            @RequestHeader("sessionID") String sessionID,
+//            @RequestParam(required = false, defaultValue = DEFAULT_DISTANCE) int distance,
+//            @RequestParam(required = false, defaultValue = "0") Integer page,
+//            @RequestParam(required = false, defaultValue = DEFAULT_PAGE_SIZE) Integer pageSize) {
+//
+//        logger.info("VehicleController - Request received for /search-by-llm");
+//
+//        Pageable pageable = PageRequest.of(page, pageSize, Sort.by("listingDate").descending());
+//
+//        SearchVehiclesResponse searchVehiclesResponse = vehicleBasicInfoServiceImpl.searchVehiclesByLLM(
+//                sessionID, minPrice, maxPrice, bodyType, engineType, content, address, distance, pageable);
+//        return getApiResponseEntityResponseEntity(searchVehiclesResponse);
+//    }
+
     @Operation(
-            summary = "Search vehicles using LLM",
-            description = "Search for vehicles based on user-provided parameters and content analyzed by LLM"
+            summary = "Search vehicles with detailed filters",
+            description = "Search for vehicles using detailed parameters like make, model, year, price, and more"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Vehicles retrieved successfully",
@@ -92,67 +189,75 @@ public class VehicleController {
                             mediaType = "application/json",
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
-                                            {
-                                              "_embedded": {
-                                                "vehicleBasicInfoDTOList": [
+                                        {
+                                          "searchType": "PRECISE",
+                                          "pagedModel": {
+                                            "page": {
+                                              "size": 10,
+                                              "totalElements": 100,
+                                              "totalPages": 10,
+                                              "number": 0
+                                            },
+                                            "content": [
+                                              {
+                                                "uuid": 234,
+                                                "make": "Cadillac",
+                                                "model": "Escalade",
+                                                "year": 2022,
+                                                "trim": "4X4 ESV SPORT-EDITION(RARE PACKAGE)",
+                                                "vin": "1GYS4PKL7NR232864",
+                                                "mileage": 34449,
+                                                "exteriorColor": "Black",
+                                                "interiorColor": "Brown",
+                                                "bodyType": "SUV",
+                                                "engineType": "Gasoline",
+                                                "engineSize": null,
+                                                "cylinder": 8,
+                                                "transmission": "Automatic",
+                                                "drivetrain": "Four Wheel Drive",
+                                                "location": {
+                                                  "country": "US",
+                                                  "stateProvince": "Michigan",
+                                                  "city": "Redford",
+                                                  "street": null,
+                                                  "postalCode": "482**",
+                                                  "unit": null,
+                                                  "latitude": 42.3995939,
+                                                  "longitude": -83.2958857
+                                                },
+                                                "vehicleCondition": "Used",
+                                                "engineInfo": null,
+                                                "cylinderInfo": null,
+                                                "warranty": "Vehicle has an existing warranty",
+                                                "vehicleTitle": "Rebuilt, Rebuildable & Reconstructed",
+                                                "capacity": 0,
+                                                "doors": 0,
+                                                "features": [
+                                                  "Sunroof",
+                                                  "Head-Up Display"
+                                                ],
+                                                "images": [
                                                   {
-                                                    "make": "Toyota",
-                                                    "model": "Camry",
-                                                    "year": 2020,
-                                                    "trim": "LE",
-                                                    "price": 25000.00,
-                                                    "currency": "USD"
-                                                  },
-                                                  {
-                                                    "make": "Honda",
-                                                    "model": "Accord",
-                                                    "year": 2019,
-                                                    "trim": "EX",
-                                                    "price": 22000.00,
-                                                    "currency": "USD"
+                                                    "url": "https://i.ebayimg.com/images/g/VVgAAOSwWNRnAJc1/s-l1600.jpg",
+                                                    "width": 1024,
+                                                    "height": 683
                                                   }
+                                                ],
+                                                "listingDate": "2024-10-09T21:50:48.000+00:00",
+                                                "sourceId": 1,
+                                                "description": "2022 Cadillac Escalade ESV Sport Vehicle Information VIN: 1GYS4PKL7NR232864 Stock: Mileage: 34,449 Color: Black Raven Trans: 10-Speed Automatic Engine: 6.2 LITER V8 ENGINE MPG: 14 City / 19 Highway Drivetrain: 4X4 Description ((HOLLYWOOD STYLE)) ((ONE OWNER)) PLEASE CLICK ON THE ABOVE 24 PICTURES IN ORDER TO VIEW IN FULL SCREEN MODE.",
+                                                "aiDescription": [
+                                                  "2022 Cadillac Escalade ESV Sport in Black Raven color",
+                                                  "Equipped with a 10-Speed Automatic Transmission"
                                                 ]
-                                              },
-                                              "page": {
-                                                "size": 10,
-                                                "totalElements": 50,
-                                                "totalPages": 5,
-                                                "number": 0
                                               }
-                                            }"""
+                                            ]
+                                          }
+                                        }
+                                        """
                             )
                     )
             ),
-            @ApiResponse(responseCode = "400", description = "Invalid parameters provided")
-    })
-    @GetMapping("/search-by-llm")
-    public ResponseEntity<ApiResponseEntity> searchVehicles(
-            @RequestParam Double minPrice,
-            @RequestParam Double maxPrice,
-            @RequestParam List<String> bodyType,
-            @RequestParam List<String> engineType,
-            @RequestParam String address,
-            @RequestBody String content,
-            @RequestHeader("sessionID") String sessionID,
-            @RequestParam(required = false, defaultValue = DEFAULT_DISTANCE) int distance,
-            @RequestParam(required = false, defaultValue = "0") Integer page,
-            @RequestParam(required = false, defaultValue = DEFAULT_PAGE_SIZE) Integer pageSize) {
-
-        logger.info("VehicleController - Request received for /search-by-llm");
-
-        Pageable pageable = PageRequest.of(page, pageSize, Sort.by("listingDate").descending());
-
-        SearchVehiclesResponse searchVehiclesResponse = vehicleBasicInfoServiceImpl.searchVehiclesByLLM(
-                sessionID, minPrice, maxPrice, bodyType, engineType, content, address, distance, pageable);
-        return getApiResponseEntityResponseEntity(searchVehiclesResponse);
-    }
-
-    @Operation(
-            summary = "Search vehicles with detailed filters",
-            description = "Search for vehicles using detailed parameters like make, model, year, price, and more"
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Vehicles retrieved successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid parameters provided")
     })
     @GetMapping("/search")
@@ -177,6 +282,7 @@ public class VehicleController {
             @RequestParam(required = false, defaultValue = DEFAULT_DISTANCE) Double distance,
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = DEFAULT_PAGE_SIZE) Integer pageSize) {
+        logger.info("VehicleController:searchVehicles - Search vehicle list by details.");
 
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by("listingDate").descending());
         SearchVehiclesResponse searchVehiclesResponse = vehicleBasicInfoServiceImpl.searchVehicles(
